@@ -323,6 +323,16 @@ syscall.exit(0)</pre>
         </section>
 
         <section>
+            <h2>Self-Hosting</h2>
+            <p>Each version includes a bootstrap compiler written in Wave itself:</p>
+<pre><span style="color:#6e6e8a"># Compile the bootstrap (using Wave-C)</span>
+./wavec src/wavec_bootstrap.wave -o bootstrap
+
+<span style="color:#6e6e8a"># Use bootstrap to compile</span>
+./bootstrap  <span style="color:#6e6e8a"># reads /tmp/input.wave, outputs /tmp/output</span></pre>
+        </section>
+
+        <section>
             <h2>Quick Start</h2>
 <pre><span style="color:#6e6e8a"># Wave-C (recommended)</span>
 gcc -o wavec src/wave5.c -O2 -lm

@@ -4,6 +4,8 @@
 
 > *Binary releases coming soon.*
 
+**Self-hosting bootstrap available!** See `src/wavec_bootstrap.wave`
+
 ---
 
 ## What is Wave?
@@ -77,6 +79,26 @@ unified {
     e: 0.2
     r: 0.9
 }
+```
+
+**Memory Operations:**
+```wave
+// Allocate memory
+syscall.mmap(0x500000, 4096, 3, 50, -1, 0)
+
+// Write byte
+poke(0x500000, 65)
+
+// Read byte
+c = peek(0x500000)
+```
+
+**File I/O:**
+```wave
+fd = syscall.open("/tmp/file.txt", 0, 0)
+n = syscall.read(fd, buffer, 1000)
+syscall.write(fd, data, len)
+syscall.close(fd)
 ```
 
 ---
