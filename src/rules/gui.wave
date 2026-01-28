@@ -1,0 +1,204 @@
+# 🌊 Wave GUI 系统
+# 窗口和组件：规则驱动的界面管理
+
+use rules/graphics
+use rules/style
+use rules/fate
+
+# ═══════════════════════════════════════════════════════════════
+# 窗口定义 (boundary 规律：界面边界)
+# ═══════════════════════════════════════════════════════════════
+
+window {
+    title: ""
+    x: 0
+    y: 0
+    width: 800
+    height: 600
+    visible: false
+    mode: 0         # 0=windowed, 1=fullscreen, 2=borderless
+}
+
+# 窗口列表
+windows: []
+
+fn window.create title width height {
+    w = {
+        title: title
+        x: 0
+        y: 0
+        width: width
+        height: height
+        visible: true
+        mode: 0
+    }
+    windows <- w
+    
+    # 更新帧缓冲区
+    framebuffer.width = width
+    framebuffer.height = height
+    framebuffer.stride = width * 4
+    
+    -> w
+}
+
+fn window.close w {
+    w.visible = false
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 组件定义 (连接规律：组件关系)
+# ═══════════════════════════════════════════════════════════════
+
+component_type {
+    button: 1
+    input: 2
+    list: 3
+    panel: 4
+    card: 5
+}
+
+component {
+    id: ""
+    type: 0
+    x: 0
+    y: 0
+    width: 0
+    height: 0
+    text: ""
+    value: ""
+    enabled: true
+    visible: true
+    style: ""
+}
+
+# 组件列表
+components: []
+
+# ═══════════════════════════════════════════════════════════════
+# 组件创建 (记忆规律：注册组件)
+# ═══════════════════════════════════════════════════════════════
+
+fn component.button id x y w h text {
+    c = {
+        id: id
+        type: component_type.button
+        x: x
+        y: y
+        width: w
+        height: h
+        text: text
+        enabled: true
+        visible: true
+    }
+    components <- c
+    -> c
+}
+
+fn component.input id x y w h {
+    c = {
+        id: id
+        type: component_type.input
+        x: x
+        y: y
+        width: w
+        height: h
+        text: ""
+        value: ""
+        enabled: true
+        visible: true
+    }
+    components <- c
+    -> c
+}
+
+fn component.list id x y w h {
+    c = {
+        id: id
+        type: component_type.list
+        x: x
+        y: y
+        width: w
+        height: h
+        items: []
+        enabled: true
+        visible: true
+    }
+    components <- c
+    -> c
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 组件渲染 (演化规律：组件到像素)
+# ═══════════════════════════════════════════════════════════════
+
+fn component.render c {
+    when c.visible {
+        when c.type == component_type.button {
+            # 按钮背景
+            shape.add_rect(c.x, c.y, c.width, c.height, 0x3498DB)
+            # 按钮文字
+            text_x = c.x + c.width / 2
+            text_y = c.y + c.height / 2
+            shape.add_text(text_x, text_y, c.text, 0xFFFFFF)
+        }
+        
+        when c.type == component_type.input {
+            # 输入框背景
+            shape.add_rect(c.x, c.y, c.width, c.height, 0xFFFFFF)
+            # 边框
+            shape.add_line(c.x, c.y, c.x + c.width, c.y, 0xBDC3C7)
+            shape.add_line(c.x, c.y + c.height, c.x + c.width, c.y + c.height, 0xBDC3C7)
+            shape.add_line(c.x, c.y, c.x, c.y + c.height, 0xBDC3C7)
+            shape.add_line(c.x + c.width, c.y, c.x + c.width, c.y + c.height, 0xBDC3C7)
+            # 文字
+            shape.add_text(c.x + 5, c.y + c.height / 2, c.value, 0x2C3E50)
+        }
+    }
+}
+
+fn gui.render_all {
+    components -> each c {
+        component.render(c)
+    }
+    render()
+}
+
+# ═══════════════════════════════════════════════════════════════
+# GUI 模式 (统一规律：模式选择)
+# ═══════════════════════════════════════════════════════════════
+
+gui_mode {
+    stem: 1     # DisplayStem
+    tile: 2     # DisplayTile
+}
+
+current_gui_mode: gui_mode.tile
+
+fn gui.set_mode mode {
+    current_gui_mode = mode
+}
+
+# ═══════════════════════════════════════════════════════════════
+# GUI 语法支持
+# ═══════════════════════════════════════════════════════════════
+
+intent gui {
+    action: gui.set_mode
+}
+
+intent window {
+    action: window.create
+}
+
+intent component.button {
+    action: component.button
+}
+
+intent component.input {
+    action: component.input
+}
+
+intent component.list {
+    action: component.list
+}

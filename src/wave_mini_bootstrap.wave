@@ -1,0 +1,93 @@
+# 🌊 Wave 最小自举编译器
+# 这是一个能编译简单 Wave 代码的最小编译器
+
+out "🌊 Wave Mini Bootstrap Compiler\n"
+
+# ═══ ELF 头生成 ═══
+fn emit_elf_header {
+    # ELF magic
+    emit "\x7fELF"
+    # 64-bit, little endian, version 1
+    emit "\x02\x01\x01\x00"
+    emit "\x00\x00\x00\x00\x00\x00\x00\x00"
+    # Type: executable
+    emit "\x02\x00"
+    # Machine: x86-64
+    emit "\x3e\x00"
+    # Version
+    emit "\x01\x00\x00\x00"
+    # Entry point: 0x400078 (header size = 120)
+    emit "\x78\x00\x40\x00\x00\x00\x00\x00"
+    # Program header offset: 64
+    emit "\x40\x00\x00\x00\x00\x00\x00\x00"
+    # Section header offset: 0
+    emit "\x00\x00\x00\x00\x00\x00\x00\x00"
+    # Flags
+    emit "\x00\x00\x00\x00"
+    # ELF header size: 64
+    emit "\x40\x00"
+    # Program header size: 56
+    emit "\x38\x00"
+    # Number of program headers: 1
+    emit "\x01\x00"
+    # Section header size: 0
+    emit "\x00\x00"
+    # Number of section headers: 0
+    emit "\x00\x00"
+    # Section name string table index: 0
+    emit "\x00\x00"
+}
+
+fn emit_program_header {
+    # Type: PT_LOAD
+    emit "\x01\x00\x00\x00"
+    # Flags: RWX
+    emit "\x07\x00\x00\x00"
+    # Offset: 0
+    emit "\x00\x00\x00\x00\x00\x00\x00\x00"
+    # Virtual address: 0x400000
+    emit "\x00\x00\x40\x00\x00\x00\x00\x00"
+    # Physical address: 0x400000
+    emit "\x00\x00\x40\x00\x00\x00\x00\x00"
+    # File size: will be filled later
+    emit "\x00\x01\x00\x00\x00\x00\x00\x00"
+    # Memory size: larger
+    emit "\x00\x10\x00\x00\x00\x00\x00\x00"
+    # Alignment: 0x1000
+    emit "\x00\x10\x00\x00\x00\x00\x00\x00"
+}
+
+# ═══ 代码生成 ═══
+fn emit_hello_world {
+    # mov rax, 1 (sys_write)
+    emit "\x48\xc7\xc0\x01\x00\x00\x00"
+    # mov rdi, 1 (stdout)
+    emit "\x48\xc7\xc7\x01\x00\x00\x00"
+    # lea rsi, [rip+offset] - 后面的字符串
+    emit "\x48\x8d\x35\x0e\x00\x00\x00"
+    # mov rdx, 14 (length)
+    emit "\x48\xc7\xc2\x0e\x00\x00\x00"
+    # syscall
+    emit "\x0f\x05"
+    # mov rax, 60 (sys_exit)
+    emit "\x48\xc7\xc0\x3c\x00\x00\x00"
+    # xor rdi, rdi
+    emit "\x48\x31\xff"
+    # syscall
+    emit "\x0f\x05"
+    # String data
+    emit "Hello, Wave!\n\x00"
+}
+
+fn compile_mini {
+    out "Generating ELF...\n"
+    emit_elf_header()
+    emit_program_header()
+    emit_hello_world()
+    out "Done!\n"
+}
+
+# 主程序
+compile_mini()
+out "Mini compiler finished.\n"
+syscall.exit(0)

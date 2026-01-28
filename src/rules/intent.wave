@@ -1,0 +1,191 @@
+# 🌊 Wave 意图映射层
+# 将高级意图映射到规则组合
+
+# ═══════════════════════════════════════════════════════════════
+# 概念类型
+# ═══════════════════════════════════════════════════════════════
+
+concept_type {
+    entity: 1      # 实体（对象）
+    action: 2      # 行为（方法）
+    relation: 3    # 关系
+    property: 4    # 属性
+    state: 5       # 状态
+    context: 6     # 上下文
+    pattern: 7     # 模式
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 概念定义
+# ═══════════════════════════════════════════════════════════════
+
+concept {
+    name: ""
+    type: 0
+    rules: []      # 关联的规则
+    related: []    # 相关概念
+}
+
+# 创建概念
+fn concept.create name type {
+    -> { name: name, type: type, rules: [], related: [] }
+}
+
+# 映射概念到规则
+fn concept.map_rules concept {
+    when concept.type == concept_type.entity {
+        concept.rules <- gravitational
+        concept.rules <- boundary
+    }
+    when concept.type == concept_type.action {
+        concept.rules <- tension
+        concept.rules <- evolution
+    }
+    when concept.type == concept_type.relation {
+        concept.rules <- connection
+        concept.rules <- orbital
+    }
+    when concept.type == concept_type.state {
+        concept.rules <- entropy
+        concept.rules <- memory
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 意图到规则映射
+# ═══════════════════════════════════════════════════════════════
+
+# out "text" → 输出规则组合
+intent out {
+    rules: [tension, connection]
+    action: syscall_write
+    target: stdout
+}
+
+# emit "bytes" → 原始字节规则
+intent emit {
+    rules: [unified]
+    action: direct_output
+    target: binary
+}
+
+# fn name { } → 函数定义规则
+intent fn {
+    rules: [boundary, memory]
+    action: define_callable
+    target: code_section
+}
+
+# when cond { } → 条件规则
+intent when {
+    rules: [tension, entropy]
+    action: conditional_branch
+    target: instruction_pointer
+}
+
+# loop { } → 循环规则
+intent loop {
+    rules: [orbital, tension]
+    action: repeat_block
+    target: instruction_pointer
+}
+
+# x = value → 赋值规则
+intent assign {
+    rules: [memory, connection]
+    action: store_value
+    target: variable_space
+}
+
+# a -> b -> c → 管道规则
+intent pipeline {
+    rules: [connection, orbital, evolution]
+    action: chain_transform
+    target: data_flow
+}
+
+# keep → 保持规则
+intent keep {
+    rules: [memory, boundary, orbital]
+    action: maintain_structure
+    target: event_loop
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 图形意图
+# ═══════════════════════════════════════════════════════════════
+
+intent draw.rect {
+    rules: [boundary, tension]
+    action: rasterize_rect
+    target: framebuffer
+}
+
+intent draw.circle {
+    rules: [curvature, boundary]
+    action: rasterize_circle
+    target: framebuffer
+}
+
+intent draw.line {
+    rules: [connection, tension]
+    action: rasterize_line
+    target: framebuffer
+}
+
+intent draw.text {
+    rules: [memory, connection]
+    action: rasterize_glyphs
+    target: framebuffer
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 样式意图
+# ═══════════════════════════════════════════════════════════════
+
+intent style {
+    rules: [memory, unified]
+    action: define_properties
+    target: style_registry
+}
+
+intent apply {
+    rules: [connection, memory]
+    action: activate_style
+    target: current_context
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 事件意图
+# ═══════════════════════════════════════════════════════════════
+
+intent on.click {
+    rules: [connection, tension, memory]
+    action: bind_handler
+    target: event_registry
+}
+
+intent on.key {
+    rules: [connection, memory]
+    action: bind_handler
+    target: event_registry
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Fate 控制意图
+# ═══════════════════════════════════════════════════════════════
+
+# fate on → 启用动态优化
+intent "fate on" {
+    rules: [unified, evolution]
+    action: fate.enable
+    target: fate_scheduler
+}
+
+# fate off → 切换到静态模式
+intent "fate off" {
+    rules: [unified, memory]
+    action: fate.disable
+    target: fate_scheduler
+}
+

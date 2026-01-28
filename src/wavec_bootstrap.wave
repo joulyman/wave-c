@@ -1,0 +1,260 @@
+// ============================================
+// Wave-C Self-Hosting Bootstrap Compiler
+// Minimal Version - Demonstrates self-hosting capability
+// Rogue Intelligence LNC.
+// ============================================
+
+fn compile {
+    CODE = 0x500000
+    SRC = 0x550000
+    DATA = 0x540000
+    
+    syscall.mmap(CODE, 65536, 3, 50, -1, 0)
+    syscall.mmap(SRC, 32768, 3, 50, -1, 0)
+    syscall.mmap(DATA, 16384, 3, 50, -1, 0)
+    
+    fd = syscall.open("/tmp/input.wave", 0, 0)
+    when fd < 0 {
+        out "Error: cannot open /tmp/input.wave\n"
+        syscall.exit(1)
+    }
+    src_len = syscall.read(fd, SRC, 30000)
+    syscall.close(fd)
+    poke(SRC + src_len, 0)
+    
+    sp = 0
+    cp = 120
+    dp = 0
+    BASE = 0x400000
+    
+    // Simple parser: only handles 'out "..."' and 'syscall.exit(N)'
+    loop {
+        // Skip whitespace and comments
+        loop {
+            c = peek(SRC + sp)
+            when c == 0 { -> 0 }
+            when c == 32 { sp = sp + 1 }
+            when c == 9 { sp = sp + 1 }
+            when c == 10 { sp = sp + 1 }
+            when c == 13 { sp = sp + 1 }
+            when c == 47 {
+                c2 = peek(SRC + sp + 1)
+                when c2 == 47 {
+                    sp = sp + 2
+                    loop {
+                        cc = peek(SRC + sp)
+                        when cc == 0 { -> 0 }
+                        when cc == 10 { sp = sp + 1 -> 0 }
+                        sp = sp + 1
+                    }
+                }
+                when c2 != 47 { -> 0 }
+            }
+            when c != 32 {
+                when c != 9 {
+                    when c != 10 {
+                        when c != 13 {
+                            when c != 47 { -> 0 }
+                        }
+                    }
+                }
+            }
+        }
+        
+        c = peek(SRC + sp)
+        when c == 0 { -> 0 }
+        
+        // Handle 'out "..."'
+        when c == 111 {
+            c1 = peek(SRC + sp + 1)
+            c2 = peek(SRC + sp + 2)
+            when c1 == 117 {
+                when c2 == 116 {
+                    sp = sp + 4
+                    loop { q = peek(SRC + sp) when q == 34 { sp = sp + 1 -> 0 } sp = sp + 1 }
+                    start = dp
+                    loop {
+                        ch = peek(SRC + sp)
+                        when ch == 34 { sp = sp + 1 -> 0 }
+                        when ch == 92 {
+                            sp = sp + 1
+                            nc = peek(SRC + sp)
+                            when nc == 110 { poke(DATA + dp, 10) }
+                            when nc != 110 { poke(DATA + dp, nc) }
+                        }
+                        when ch != 92 { poke(DATA + dp, ch) }
+                        dp = dp + 1
+                        sp = sp + 1
+                    }
+                    slen = dp - start
+                    saddr = BASE + 120 + 32768 + start
+                    
+                    // mov rax, 1; mov rdi, 1; mov rsi, addr; mov rdx, len; syscall
+                    poke(CODE + cp, 0x48) cp = cp + 1
+                    poke(CODE + cp, 0xB8) cp = cp + 1
+                    poke(CODE + cp, 1) cp = cp + 1
+                    j = 0 loop { when j >= 7 { -> 0 } poke(CODE + cp, 0) cp = cp + 1 j = j + 1 }
+                    poke(CODE + cp, 0x48) cp = cp + 1
+                    poke(CODE + cp, 0xBF) cp = cp + 1
+                    poke(CODE + cp, 1) cp = cp + 1
+                    j = 0 loop { when j >= 7 { -> 0 } poke(CODE + cp, 0) cp = cp + 1 j = j + 1 }
+                    poke(CODE + cp, 0x48) cp = cp + 1
+                    poke(CODE + cp, 0xBE) cp = cp + 1
+                    poke(CODE + cp, saddr) cp = cp + 1
+                    poke(CODE + cp, saddr / 256) cp = cp + 1
+                    poke(CODE + cp, saddr / 65536) cp = cp + 1
+                    poke(CODE + cp, saddr / 16777216) cp = cp + 1
+                    j = 0 loop { when j >= 4 { -> 0 } poke(CODE + cp, 0) cp = cp + 1 j = j + 1 }
+                    poke(CODE + cp, 0x48) cp = cp + 1
+                    poke(CODE + cp, 0xBA) cp = cp + 1
+                    poke(CODE + cp, slen) cp = cp + 1
+                    j = 0 loop { when j >= 7 { -> 0 } poke(CODE + cp, 0) cp = cp + 1 j = j + 1 }
+                    poke(CODE + cp, 0x0F) cp = cp + 1
+                    poke(CODE + cp, 0x05) cp = cp + 1
+                }
+            }
+        }
+        
+        // Handle 'syscall.exit(N)'
+        when c == 115 {
+            c1 = peek(SRC + sp + 1)
+            when c1 == 121 {
+                sp = sp + 12
+                loop { q = peek(SRC + sp) when q == 40 { sp = sp + 1 -> 0 } sp = sp + 1 }
+                code = 0
+                loop {
+                    d = peek(SRC + sp)
+                    when d < 48 { -> 0 }
+                    when d > 57 { -> 0 }
+                    code = code * 10 + d - 48
+                    sp = sp + 1
+                }
+                
+                // mov rax, 60; mov rdi, code; syscall
+                poke(CODE + cp, 0x48) cp = cp + 1
+                poke(CODE + cp, 0xB8) cp = cp + 1
+                poke(CODE + cp, 60) cp = cp + 1
+                j = 0 loop { when j >= 7 { -> 0 } poke(CODE + cp, 0) cp = cp + 1 j = j + 1 }
+                poke(CODE + cp, 0x48) cp = cp + 1
+                poke(CODE + cp, 0xBF) cp = cp + 1
+                poke(CODE + cp, code) cp = cp + 1
+                j = 0 loop { when j >= 7 { -> 0 } poke(CODE + cp, 0) cp = cp + 1 j = j + 1 }
+                poke(CODE + cp, 0x0F) cp = cp + 1
+                poke(CODE + cp, 0x05) cp = cp + 1
+            }
+        }
+        
+        // Skip to end of line
+        loop {
+            lc = peek(SRC + sp)
+            when lc == 0 { -> 0 }
+            when lc == 10 { sp = sp + 1 -> 0 }
+            sp = sp + 1
+        }
+    }
+    
+    // Append data section
+    j = 0
+    loop {
+        when j >= dp { -> 0 }
+        poke(CODE + cp, peek(DATA + j))
+        cp = cp + 1
+        j = j + 1
+    }
+    
+    // Generate minimal ELF header
+    total = cp - 120
+    hp = 0
+    
+    // ELF magic + class + endian + version
+    poke(CODE + hp, 0x7F) hp = hp + 1
+    poke(CODE + hp, 0x45) hp = hp + 1
+    poke(CODE + hp, 0x4C) hp = hp + 1
+    poke(CODE + hp, 0x46) hp = hp + 1
+    poke(CODE + hp, 2) hp = hp + 1
+    poke(CODE + hp, 1) hp = hp + 1
+    poke(CODE + hp, 1) hp = hp + 1
+    j = 0 loop { when j >= 9 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Type + machine
+    poke(CODE + hp, 2) hp = hp + 1
+    poke(CODE + hp, 0) hp = hp + 1
+    poke(CODE + hp, 0x3E) hp = hp + 1
+    poke(CODE + hp, 0) hp = hp + 1
+    
+    // Version
+    poke(CODE + hp, 1) hp = hp + 1
+    j = 0 loop { when j >= 3 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Entry point
+    entry = BASE + 120
+    poke(CODE + hp, entry) hp = hp + 1
+    poke(CODE + hp, entry / 256) hp = hp + 1
+    poke(CODE + hp, entry / 65536) hp = hp + 1
+    poke(CODE + hp, entry / 16777216) hp = hp + 1
+    j = 0 loop { when j >= 4 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Program header offset
+    poke(CODE + hp, 64) hp = hp + 1
+    j = 0 loop { when j >= 7 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Section header offset
+    j = 0 loop { when j >= 8 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Flags + header sizes
+    j = 0 loop { when j >= 4 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    poke(CODE + hp, 64) hp = hp + 1
+    poke(CODE + hp, 0) hp = hp + 1
+    poke(CODE + hp, 56) hp = hp + 1
+    poke(CODE + hp, 0) hp = hp + 1
+    poke(CODE + hp, 1) hp = hp + 1
+    j = 0 loop { when j >= 5 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Program header
+    poke(CODE + hp, 1) hp = hp + 1
+    j = 0 loop { when j >= 3 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    poke(CODE + hp, 7) hp = hp + 1
+    j = 0 loop { when j >= 3 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    j = 0 loop { when j >= 8 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Virtual/physical address
+    poke(CODE + hp, BASE) hp = hp + 1
+    poke(CODE + hp, BASE / 256) hp = hp + 1
+    poke(CODE + hp, BASE / 65536) hp = hp + 1
+    poke(CODE + hp, BASE / 16777216) hp = hp + 1
+    j = 0 loop { when j >= 4 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    poke(CODE + hp, BASE) hp = hp + 1
+    poke(CODE + hp, BASE / 256) hp = hp + 1
+    poke(CODE + hp, BASE / 65536) hp = hp + 1
+    poke(CODE + hp, BASE / 16777216) hp = hp + 1
+    j = 0 loop { when j >= 4 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // File size
+    fsize = 120 + total
+    poke(CODE + hp, fsize) hp = hp + 1
+    poke(CODE + hp, fsize / 256) hp = hp + 1
+    j = 0 loop { when j >= 6 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Memory size
+    msize = fsize + 65536
+    poke(CODE + hp, msize) hp = hp + 1
+    poke(CODE + hp, msize / 256) hp = hp + 1
+    poke(CODE + hp, msize / 65536) hp = hp + 1
+    j = 0 loop { when j >= 5 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Alignment
+    poke(CODE + hp, 0) hp = hp + 1
+    poke(CODE + hp, 16) hp = hp + 1
+    j = 0 loop { when j >= 6 { -> 0 } poke(CODE + hp, 0) hp = hp + 1 j = j + 1 }
+    
+    // Write output
+    fd = syscall.open("/tmp/output", 577, 493)
+    syscall.write(fd, CODE, cp)
+    syscall.close(fd)
+    
+    out "Bootstrap: /tmp/output\n"
+}
+
+out "Wave-C Bootstrap v1.0\n"
+compile()
+syscall.exit(0)

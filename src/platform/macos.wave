@@ -1,0 +1,21 @@
+# 🍎 macOS 最小桥接
+
+fn macos.emit_header {
+    # Mach-O 64 头
+    emit "\xcf\xfa\xed\xfe"  # MH_MAGIC_64
+    emit "\x07\x00\x00\x01"  # x86_64
+    emit "\x03\x00\x00\x00"  # CPU subtype
+    emit "\x02\x00\x00\x00"  # MH_EXECUTE
+}
+
+fn macos.syscall num {
+    # macOS syscall: num + 0x2000000
+    adjusted = num + 0x2000000
+    emit "\x48\xc7\xc0"
+    emit adjusted
+    emit "\x0f\x05"
+}
+
+fn macos.exit code {
+    macos.syscall(1)
+}

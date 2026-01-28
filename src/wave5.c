@@ -686,6 +686,21 @@ void gen_mov_rdx_imm(CodeGen* cg, int64_t v) {
     emit_u64(cg, (uint64_t)v);
 }
 
+// mov rdi, rax
+void gen_mov_rdi_rax(CodeGen* cg) {
+    emit_bytes(cg, (uint8_t[]){0x48, 0x89, 0xc7}, 3);
+}
+
+// mov rsi, rax
+void gen_mov_rsi_rax(CodeGen* cg) {
+    emit_bytes(cg, (uint8_t[]){0x48, 0x89, 0xc6}, 3);
+}
+
+// mov rdx, rax
+void gen_mov_rdx_rax(CodeGen* cg) {
+    emit_bytes(cg, (uint8_t[]){0x48, 0x89, 0xc2}, 3);
+}
+
 void gen_mov_rax_rbp_off(CodeGen* cg, int32_t off) {
     emit_bytes(cg, (uint8_t[]){0x48, 0x8b, 0x85}, 3);
     emit_i32(cg, off);
@@ -972,8 +987,22 @@ int64_t compile_expr(Compiler* c) {
     }
     else if (peek(c) == '"') {
         char* str = parse_string(c);
-        left = strlen(str);
-        gen_mov_rax_imm(&c->codegen, left);
+        size_t len = strlen(str);
+        
+        // Embed string inline in code, use lea to get address
+        // jmp over string data
+        emit_byte(&c->codegen, 0xeb);  // jmp short
+        emit_byte(&c->codegen, len + 1);  // skip len+1 bytes
+        
+        size_t str_pos = c->codegen.code_pos;
+        for (size_t i = 0; i <= len; i++) emit_byte(&c->codegen, str[i]);
+        
+        // lea rax, [rip - offset_to_string]
+        int32_t rel = -(int32_t)(c->codegen.code_pos - str_pos + 7);
+        emit_bytes(&c->codegen, (uint8_t[]){0x48, 0x8d, 0x05}, 3);  // lea rax, [rip+disp32]
+        emit_i32(&c->codegen, rel);
+        
+        left = 0;  // Address is computed at runtime
         free(str);
     }
     else if (is_ident_start(peek(c))) {
@@ -995,6 +1024,114 @@ int64_t compile_expr(Compiler* c) {
                 gen_syscall(&c->codegen);
                 emit_bytes(&c->codegen, (uint8_t[]){0x48, 0x0f, 0xb6, 0x04, 0x24}, 5);
                 gen_add_rsp(&c->codegen, 16);
+                left = 0;
+            }
+            // peek(addr) - read byte from memory
+            else if (strcmp(name, "peek") == 0) {
+                compile_expr(c);  // addr in rax
+                skip_whitespace(c);
+                if (peek(c) == ')') advance(c);
+                // movzx rax, byte [rax]
+                emit_bytes(&c->codegen, (uint8_t[]){0x48, 0x0f, 0xb6, 0x00}, 4);
+                left = 0;
+            }
+            // poke(addr, val) - write byte to memory
+            else if (strcmp(name, "poke") == 0) {
+                compile_expr(c);  // addr
+                gen_push_rax(&c->codegen);
+                skip_whitespace(c);
+                if (peek(c) == ',') advance(c);
+                skip_whitespace(c);
+                compile_expr(c);  // val in rax
+                skip_whitespace(c);
+                if (peek(c) == ')') advance(c);
+                gen_pop_rbx(&c->codegen);
+                // mov [rbx], al
+                emit_bytes(&c->codegen, (uint8_t[]){0x88, 0x03}, 2);
+                left = 0;
+            }
+            // syscall.xxx - handle syscall.open, syscall.read, etc.
+            // Note: name might be "syscall" or "syscall.xxx" depending on parse_ident
+            else if (strncmp(name, "syscall", 7) == 0) {
+                const char* syscall_name = name + 7;
+                if (*syscall_name == '.') syscall_name++;  // skip '.'
+                else if (peek(c) == '.') {
+                    advance(c);
+                    free(name);
+                    name = parse_ident(c);
+                    syscall_name = name;
+                }
+                skip_whitespace(c);
+                if (peek(c) == '(') advance(c);
+                
+                if (strcmp(syscall_name, "open") == 0) {
+                    compile_expr(c); gen_push_rax(&c->codegen);  // path
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_push_rax(&c->codegen);  // flags
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_mov_rdx_rax(&c->codegen);  // mode
+                    gen_pop_rax(&c->codegen); gen_mov_rsi_rax(&c->codegen);  // flags
+                    gen_pop_rax(&c->codegen); gen_mov_rdi_rax(&c->codegen);  // path
+                    gen_mov_rax_imm(&c->codegen, 2);  // sys_open
+                    gen_syscall(&c->codegen);
+                }
+                else if (strcmp(syscall_name, "read") == 0) {
+                    compile_expr(c); gen_push_rax(&c->codegen);  // fd
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_push_rax(&c->codegen);  // buf
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_mov_rdx_rax(&c->codegen);  // count
+                    gen_pop_rax(&c->codegen); gen_mov_rsi_rax(&c->codegen);  // buf
+                    gen_pop_rax(&c->codegen); gen_mov_rdi_rax(&c->codegen);  // fd
+                    gen_mov_rax_imm(&c->codegen, 0);  // sys_read
+                    gen_syscall(&c->codegen);
+                }
+                else if (strcmp(syscall_name, "write") == 0) {
+                    compile_expr(c); gen_push_rax(&c->codegen);  // fd
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_push_rax(&c->codegen);  // buf
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_mov_rdx_rax(&c->codegen);  // count
+                    gen_pop_rax(&c->codegen); gen_mov_rsi_rax(&c->codegen);  // buf
+                    gen_pop_rax(&c->codegen); gen_mov_rdi_rax(&c->codegen);  // fd
+                    gen_mov_rax_imm(&c->codegen, 1);  // sys_write
+                    gen_syscall(&c->codegen);
+                }
+                else if (strcmp(syscall_name, "close") == 0) {
+                    compile_expr(c); gen_mov_rdi_rax(&c->codegen);  // fd
+                    gen_mov_rax_imm(&c->codegen, 3);  // sys_close
+                    gen_syscall(&c->codegen);
+                }
+                else if (strcmp(syscall_name, "mmap") == 0) {
+                    // Push all args to stack first, then pop to correct regs
+                    compile_expr(c); gen_push_rax(&c->codegen);  // addr
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_push_rax(&c->codegen);  // len
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_push_rax(&c->codegen);  // prot
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_push_rax(&c->codegen);  // flags
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c); gen_push_rax(&c->codegen);  // fd
+                    skip_whitespace(c); if (peek(c) == ',') advance(c);
+                    compile_expr(c);  // offset -> r9
+                    emit_bytes(&c->codegen, (uint8_t[]){0x49, 0x89, 0xc1}, 3);
+                    // pop r8 (fd)
+                    emit_bytes(&c->codegen, (uint8_t[]){0x41, 0x58}, 2);
+                    // pop r10 (flags)
+                    emit_bytes(&c->codegen, (uint8_t[]){0x41, 0x5a}, 2);
+                    gen_pop_rax(&c->codegen);  // prot -> rdx
+                    gen_mov_rdx_rax(&c->codegen);
+                    gen_pop_rax(&c->codegen);  // len -> rsi
+                    gen_mov_rsi_rax(&c->codegen);
+                    gen_pop_rax(&c->codegen);  // addr -> rdi
+                    gen_mov_rdi_rax(&c->codegen);
+                    gen_mov_rax_imm(&c->codegen, 9);  // sys_mmap
+                    gen_syscall(&c->codegen);
+                }
+                skip_whitespace(c);
+                if (peek(c) == ')') advance(c);
+                // Don't free syscall_name - it points into 'name' which is freed later
                 left = 0;
             }
             else {
@@ -1430,6 +1567,116 @@ void compile_statement(Compiler* c) {
         while (peek(c) != ')' && c->pos < c->len) advance(c);
         if (peek(c) == ')') advance(c);
         gen_exit(&c->codegen, code);
+        return;
+    }
+    
+    // syscall.write(fd, buf, count)
+    if (match(c, "syscall.write(")) {
+        c->pos += 14;
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_mov_rdx_rax(&c->codegen);
+        gen_pop_rax(&c->codegen); gen_mov_rsi_rax(&c->codegen);
+        gen_pop_rax(&c->codegen); gen_mov_rdi_rax(&c->codegen);
+        gen_mov_rax_imm(&c->codegen, 1);
+        gen_syscall(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ')') advance(c);
+        return;
+    }
+    
+    // syscall.read(fd, buf, count)
+    if (match(c, "syscall.read(")) {
+        c->pos += 13;
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_mov_rdx_rax(&c->codegen);
+        gen_pop_rax(&c->codegen); gen_mov_rsi_rax(&c->codegen);
+        gen_pop_rax(&c->codegen); gen_mov_rdi_rax(&c->codegen);
+        gen_mov_rax_imm(&c->codegen, 0);
+        gen_syscall(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ')') advance(c);
+        return;
+    }
+    
+    // syscall.open(path, flags, mode)
+    if (match(c, "syscall.open(")) {
+        c->pos += 13;
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_mov_rdx_rax(&c->codegen);
+        gen_pop_rax(&c->codegen); gen_mov_rsi_rax(&c->codegen);
+        gen_pop_rax(&c->codegen); gen_mov_rdi_rax(&c->codegen);
+        gen_mov_rax_imm(&c->codegen, 2);
+        gen_syscall(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ')') advance(c);
+        return;
+    }
+    
+    // syscall.close(fd)
+    if (match(c, "syscall.close(")) {
+        c->pos += 14;
+        compile_expr(c); gen_mov_rdi_rax(&c->codegen);
+        gen_mov_rax_imm(&c->codegen, 3);
+        gen_syscall(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ')') advance(c);
+        return;
+    }
+    
+    // syscall.mmap(addr, len, prot, flags, fd, offset)
+    if (match(c, "syscall.mmap(")) {
+        c->pos += 13;
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c); gen_push_rax(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ',') advance(c);
+        compile_expr(c);
+        emit_bytes(&c->codegen, (uint8_t[]){0x49, 0x89, 0xc1}, 3);  // mov r9, rax
+        emit_bytes(&c->codegen, (uint8_t[]){0x41, 0x58}, 2);  // pop r8
+        emit_bytes(&c->codegen, (uint8_t[]){0x41, 0x5a}, 2);  // pop r10
+        gen_pop_rax(&c->codegen); gen_mov_rdx_rax(&c->codegen);
+        gen_pop_rax(&c->codegen); gen_mov_rsi_rax(&c->codegen);
+        gen_pop_rax(&c->codegen); gen_mov_rdi_rax(&c->codegen);
+        gen_mov_rax_imm(&c->codegen, 9);
+        gen_syscall(&c->codegen);
+        skip_whitespace(c); if (peek(c) == ')') advance(c);
+        return;
+    }
+    
+    // poke(addr, val) as statement
+    if (match(c, "poke(")) {
+        c->pos += 5;
+        compile_expr(c);  // addr
+        gen_push_rax(&c->codegen);
+        skip_whitespace(c);
+        if (peek(c) == ',') advance(c);
+        skip_whitespace(c);
+        compile_expr(c);  // val
+        gen_pop_rbx(&c->codegen);
+        emit_bytes(&c->codegen, (uint8_t[]){0x88, 0x03}, 2);  // mov [rbx], al
+        skip_whitespace(c);
+        if (peek(c) == ')') advance(c);
+        return;
+    }
+    
+    // peek(addr) as statement (result discarded)
+    if (match(c, "peek(")) {
+        c->pos += 5;
+        compile_expr(c);  // addr
+        emit_bytes(&c->codegen, (uint8_t[]){0x48, 0x0f, 0xb6, 0x00}, 4);  // movzx rax, byte [rax]
+        skip_whitespace(c);
+        if (peek(c) == ')') advance(c);
         return;
     }
     

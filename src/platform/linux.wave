@@ -1,0 +1,23 @@
+# 🐧 Linux 最小桥接
+
+fn linux.emit_header {
+    # ELF64 头
+    emit "\x7fELF"           # magic
+    emit "\x02"              # 64-bit
+    emit "\x01"              # little endian
+    emit "\x01"              # version
+    emit "\x00\x00\x00\x00\x00\x00\x00\x00\x00"  # padding
+    emit "\x02\x00"          # executable
+    emit "\x3e\x00"          # x86_64
+    emit "\x01\x00\x00\x00"  # version
+}
+
+fn linux.syscall num {
+    emit "\x48\xc7\xc0"      # mov rax, num
+    emit num
+    emit "\x0f\x05"          # syscall
+}
+
+fn linux.exit code {
+    linux.syscall(60)
+}

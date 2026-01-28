@@ -1,0 +1,1709 @@
+# 🌊 Wave 5.0 静默编译器
+# ═══ unified.wave ═══
+# 🌌 Wave 统一场 (Unified Field)
+# 规则映射层：把计算机行为映射为物理数学规则
+
+# ═══════════════════════════════════════════════════════════════
+# 核心：统一场是规则的源头
+# 计算机的所有行为（CPU、内存、IO）都可以用这些规则描述
+# ═══════════════════════════════════════════════════════════════
+
+# 统一场三参数 — 描述任何计算机行为
+unified {
+    information_density: 1.0    # 信息密度：数据紧凑程度
+    entropy_gradient: 0.0       # 熵梯度：无序度变化
+    relation_strength: 1.0      # 关系强度：元素关联程度
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 派生规则 — 从三参数派生的物理数学规则
+# 这些规则描述计算机的各种行为模式
+# ═══════════════════════════════════════════════════════════════
+
+# 引力规则 — 描述数据聚合行为
+# 例：缓存局部性、内存池聚合
+fn derive.gravitational {
+        strength: unified.information_density
+        inverse_square: 2.0 * unified.entropy_gradient + 1.0
+        threshold: unified.relation_strength * 0.1
+    }
+}
+
+# 张力规则 — 描述资源压力行为
+# 例：内存压力、CPU 负载
+fn derive.tension {
+        base: unified.relation_strength
+        accumulation: unified.entropy_gradient
+        release: unified.information_density * 0.8
+    }
+}
+
+# 熵规则 — 描述无序度变化
+# 例：内存碎片、数据随机性
+fn derive.entropy {
+        initial: unified.entropy_gradient
+        growth: unified.information_density * 0.01
+        critical: 1.0 - unified.relation_strength * 0.1
+    }
+}
+
+# 连接规则 — 描述元素关联行为
+# 例：指针关系、数据结构连接
+fn derive.connection {
+        strength: unified.relation_strength
+        plasticity: unified.entropy_gradient
+        decay: 1.0 - unified.information_density
+    }
+}
+
+# 记忆规则 — 描述持久性行为
+# 例：缓存保持、状态持久
+fn derive.memory {
+        persistence: unified.information_density
+        recall: unified.relation_strength
+        decay: unified.entropy_gradient * 0.001
+    }
+}
+
+# 轨道规则 — 描述循环行为
+# 例：任务调度、动画循环
+fn derive.orbital {
+        eccentricity: unified.entropy_gradient
+        period: unified.relation_strength
+        stability: unified.information_density
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 规则映射 — 把高级概念映射到规则组合
+# ═══════════════════════════════════════════════════════════════
+
+# 映射：缓存行为
+rule map.cache {
+    gravitational.strength = 0.9    # 高聚合
+    memory.persistence = 0.9        # 高持久
+    entropy.growth = 0.1            # 低碎片
+}
+
+# 映射：流式处理
+rule map.stream {
+    entropy.growth = 0.8            # 快速流动
+    connection.plasticity = 0.3     # 低关联
+    memory.persistence = 0.2        # 低持久
+}
+
+# 映射：图结构
+rule map.graph {
+    connection.strength = 0.9       # 高连接
+    relation_strength = 0.9         # 高关联
+    gravitational.strength = 0.5    # 中等聚合
+}
+
+# 映射：并行计算
+rule map.parallel {
+    orbital.period = 0.1            # 快速循环
+    entropy.growth = 0.5            # 中等无序
+    connection.plasticity = 0.7     # 高可塑
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 初始化和报告
+# ═══════════════════════════════════════════════════════════════
+
+fn unified.init {
+    unified.information_density = 1.0
+    unified.entropy_gradient = 0.0
+    unified.relation_strength = 1.0
+}
+
+fn unified.report {
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 动态调整 — 运行时根据观测调整参数
+# ═══════════════════════════════════════════════════════════════
+
+fn unified.adjust usage fragmentation patterns {
+    when usage > 80 {
+        unified.entropy_gradient = unified.entropy_gradient + 0.1
+    }
+    when fragmentation > 50 {
+        unified.information_density = unified.information_density + 0.1
+    }
+    when patterns > 0 {
+        unified.relation_strength = unified.relation_strength + 0.1
+    }
+    
+    # 归一化
+    when unified.information_density > 1.0 { unified.information_density = 1.0 }
+    when unified.entropy_gradient > 1.0 { unified.entropy_gradient = 1.0 }
+    when unified.relation_strength > 1.0 { unified.relation_strength = 1.0 }
+}
+
+# ═══ tile.wave ═══
+# 🧱 Tile 内存管理器
+# 实际的内存分配和管理
+
+# ═══════════════════════════════════════════════════════════════
+# 四元内存池 (TileQuattro)
+# ═══════════════════════════════════════════════════════════════
+
+# 内存池定义
+pool BlackHole {
+    base: 0x10000
+    size: 65536
+    used: 0
+    purpose: "compression"    # 压缩存储
+}
+
+pool MeshBrain {
+    base: 0x20000
+    size: 65536
+    used: 0
+    purpose: "pattern"        # 模式处理
+}
+
+pool MultiNova {
+    base: 0x30000
+    size: 65536
+    used: 0
+    purpose: "parallel"       # 并行数据
+}
+
+pool BaseForce {
+    base: 0x40000
+    size: 65536
+    used: 0
+    purpose: "fragment"       # 快速碎片
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 内存分配 — 根据统一场规则选择池
+# ═══════════════════════════════════════════════════════════════
+
+fn tile.alloc size {
+    # 根据当前统一场参数选择最佳池
+    
+    # 高信息密度 → BlackHole (压缩)
+    when unified.information_density > 0.8 {
+    }
+    
+    # 高关系强度 → MeshBrain (模式)
+    when unified.relation_strength > 0.8 {
+    }
+    
+    # 高熵梯度 → BaseForce (快速)
+    when unified.entropy_gradient > 0.5 {
+    }
+    
+    # 默认 → MultiNova (通用)
+}
+
+fn tile.alloc_from pool size {
+    when pool.used + size > pool.size {
+        # 池满，触发收缩
+        tile.compact(pool)
+    }
+    
+    addr = pool.base + pool.used
+    pool.used = pool.used + size
+    
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 内存释放
+# ═══════════════════════════════════════════════════════════════
+
+fn tile.free addr size {
+    # 确定属于哪个池
+    when addr >= BlackHole.base {
+        when addr < BlackHole.base + BlackHole.size {
+            BlackHole.used = BlackHole.used - size
+            return
+        }
+    }
+    when addr >= MeshBrain.base {
+        when addr < MeshBrain.base + MeshBrain.size {
+            MeshBrain.used = MeshBrain.used - size
+            return
+        }
+    }
+    when addr >= MultiNova.base {
+        when addr < MultiNova.base + MultiNova.size {
+            MultiNova.used = MultiNova.used - size
+            return
+        }
+    }
+    when addr >= BaseForce.base {
+        when addr < BaseForce.base + BaseForce.size {
+            BaseForce.used = BaseForce.used - size
+            return
+        }
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 内存紧缩 (Collapse 触发)
+# ═══════════════════════════════════════════════════════════════
+
+fn tile.compact pool {
+    # 紧缩内存，减少碎片
+    # Collapse 边际收益检查
+    
+    before = pool.used
+    # ... 执行紧缩 ...
+    after = pool.used
+    
+    gain = before - after
+    
+    # 边际收益检查
+    when gain < pool.size * 0.05 {
+        # 收益太小，停止
+        return
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 池状态报告
+# ═══════════════════════════════════════════════════════════════
+
+fn tile.report {
+}
+
+fn tile.total_used {
+}
+
+fn tile.total_size {
+}
+
+fn tile.fragmentation {
+    # 计算碎片率
+    total = tile.total_size()
+    used = tile.total_used()
+    
+    # 简化：假设碎片 = 分散程度
+    pools_active = 0
+    when BlackHole.used > 0 { pools_active = pools_active + 1 }
+    when MeshBrain.used > 0 { pools_active = pools_active + 1 }
+    when MultiNova.used > 0 { pools_active = pools_active + 1 }
+    when BaseForce.used > 0 { pools_active = pools_active + 1 }
+    
+    when pools_active <= 1 { -> 0 }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 初始化
+# ═══════════════════════════════════════════════════════════════
+
+fn tile.init {
+    BlackHole.used = 0
+    MeshBrain.used = 0
+    MultiNova.used = 0
+    BaseForce.used = 0
+}
+
+# ═══ fate.wave ═══
+# 🌊 Fate 调度器
+# 全局资源调度，连接统一场和 Tile
+#
+# Wave 双模式：
+#   - 不加载 Fate → 静态代码（直接执行，无优化）
+#   - 加载 Fate   → 动态优化（自动双向优化）
+#
+# 双向优化：
+#   - 适应任务：根据代码执行模式调整
+#   - 适应硬件：根据硬件能力调整
+#
+# Collapse：达到稳定状态后，动态代码 → 静态化
+
+
+# ═══════════════════════════════════════════════════════════════
+# Fate 状态
+# ═══════════════════════════════════════════════════════════════
+
+fate {
+    enabled: true         # Fate 是否启用
+    current_usage: 0
+    peak_usage: 0
+    resource_limit: 100
+    collapse_count: 0
+    strategy: 2           # 1=高性能, 2=标准, 3=兼容
+    mode: "dynamic"       # "static" or "dynamic"
+}
+
+# 任务特征（适应任务）
+task {
+    compute_heavy: false   # 计算密集
+    memory_heavy: false    # 内存密集
+    io_heavy: false        # IO 密集
+    pattern_count: 0       # 检测到的模式数
+    loop_count: 0          # 循环次数
+    branch_ratio: 0.0      # 分支比例
+}
+
+# GPU 能力
+gpu {
+    vendor: 0
+    vram: 0
+    max_w: 1920
+    max_h: 1080
+    ready: false
+}
+
+# 性能监控
+perf {
+    frame_count: 0
+    frame_time: 0
+    fps: 60
+    frame_start: 0
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 资源分配 — 通过 Tile 管理器
+# ═══════════════════════════════════════════════════════════════
+
+fn fate.allocate size {
+    # 通过 Tile 分配内存
+    addr = tile.alloc(size)
+    
+    # 更新使用统计
+    fate.current_usage = tile.total_used() * 100 / tile.total_size()
+    
+    when fate.current_usage > fate.peak_usage {
+        fate.peak_usage = fate.current_usage
+    }
+    
+    # 检查是否需要调整统一场
+    fate.check_adjust()
+    
+}
+
+fn fate.release addr size {
+    tile.free(addr, size)
+    fate.current_usage = tile.total_used() * 100 / tile.total_size()
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 适应任务 — 根据代码执行模式调整
+# ═══════════════════════════════════════════════════════════════
+
+fn fate.observe_task {
+    # 监控代码执行，识别任务特征
+    
+    # 检测计算密集
+    when perf.fps < 30 {
+        when fate.current_usage < 50 {
+            task.compute_heavy = true
+        }
+    }
+    
+    # 检测内存密集
+    when fate.current_usage > 70 {
+        task.memory_heavy = true
+    }
+    
+    # 检测 IO 密集
+    when perf.frame_time > 16 {
+        when fate.current_usage < 30 {
+            task.io_heavy = true
+        }
+    }
+}
+
+fn fate.adapt_to_task {
+    # 根据任务特征调整统一场参数
+    
+    when task.compute_heavy {
+        # 计算密集：增加信息密度，优化缓存
+        unified.information_density = 0.9
+        unified.relation_strength = 0.8
+    }
+    
+    when task.memory_heavy {
+        # 内存密集：增加熵梯度，快速分配释放
+        unified.entropy_gradient = 0.7
+    }
+    
+    when task.io_heavy {
+        # IO 密集：平衡参数
+        unified.information_density = 0.5
+        unified.entropy_gradient = 0.5
+        unified.relation_strength = 0.5
+    }
+    
+    when task.pattern_count > 5 {
+        # 检测到模式：增加关系强度
+        unified.relation_strength = 0.9
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 适应硬件 — 已有 GPU 适应，补充通用硬件
+# ═══════════════════════════════════════════════════════════════
+
+fn fate.adapt_to_hardware {
+    # GPU 适应（已实现）
+    when gpu.ready {
+        # 根据 GPU 能力调整策略
+    }
+    
+    # 根据策略调整统一场
+    when fate.strategy == 1 {
+        # 高性能：最大化利用
+        unified.information_density = 1.0
+    }
+    when fate.strategy == 3 {
+        # 兼容：保守使用
+        unified.information_density = 0.5
+        unified.entropy_gradient = 0.3
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 双向优化 — 综合适应任务和硬件
+# ═══════════════════════════════════════════════════════════════
+
+fn fate.check_adjust {
+    # 只在动态模式下优化
+    when fate.mode != "dynamic" { return }
+    
+    usage = fate.current_usage
+    frag = tile.fragmentation()
+    
+    # 1. 观测任务
+    fate.observe_task()
+    
+    # 2. 适应任务
+    fate.adapt_to_task()
+    
+    # 3. 适应硬件
+    fate.adapt_to_hardware()
+    
+    # 4. 调整统一场参数
+    unified.adjust(usage, frag, task.pattern_count)
+    
+    # 5. 检查是否触发 Collapse（静态化）
+    when fate.should_collapse(0) {
+        fate.collapse(0)
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Collapse — 代码静态化
+# Fate 监控代码执行，当边际收益不足时触发静态化
+# ═══════════════════════════════════════════════════════════════
+
+collapse {
+    marginal_threshold: 0.05    # 边际收益阈值
+    previous_gain: 0
+    static_count: 0
+}
+
+# 检查是否应该触发 Collapse（静态化）
+fn fate.should_collapse current_gain {
+    gain_diff = current_gain - collapse.previous_gain
+    collapse.previous_gain = current_gain
+    
+    # 边际收益低于阈值 → 触发静态化
+    when gain_diff < collapse.marginal_threshold {
+    }
+}
+
+# 执行 Collapse — 静态化代码
+fn fate.collapse code_block {
+    collapse.static_count = collapse.static_count + 1
+    
+    # 把动态代码路径固化为静态
+    # 1. 记录当前统一场参数作为静态值
+    # 2. 固化 Tile 分配策略
+    # 3. 停止动态优化
+    
+    static_info = unified.information_density
+    static_entropy = unified.entropy_gradient
+    static_relation = unified.relation_strength
+    
+    # 切换到静态模式
+    fate.mode = "static"
+    
+}
+
+# Fate 自动优化循环
+fn fate.optimize_loop body {
+    iteration = 0
+    previous_result = 0
+    
+    loop {
+        current_result = body()
+        iteration = iteration + 1
+        
+        # 计算边际收益
+        gain = current_result - previous_result
+        previous_result = current_result
+        
+        # 检查是否触发 Collapse
+        when fate.should_collapse(gain) {
+            fate.collapse(body)
+            break
+        }
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# GPU 自适应
+# ═══════════════════════════════════════════════════════════════
+
+fn fate.report_gpu info {
+    gpu.vendor = info.vendor
+    gpu.vram = info.vram
+    gpu.max_w = info.max_width
+    gpu.max_h = info.max_height
+    
+    # 根据 GPU 能力调整统一场
+    when gpu.vram >= 67108864 {
+        unified.information_density = 1.0
+        fate.strategy = 1
+    }
+    when gpu.vram >= 8388608 {
+        when gpu.vram < 67108864 {
+            unified.information_density = 0.7
+            fate.strategy = 2
+        }
+    }
+    when gpu.vram < 8388608 {
+        unified.information_density = 0.4
+        unified.entropy_gradient = 0.5
+        fate.strategy = 3
+    }
+    
+    gpu.ready = true
+}
+
+fn fate.best_width {
+    when fate.strategy == 1 { -> gpu.max_w }
+    when fate.strategy == 2 {
+        when gpu.max_w > 1280 { -> 1280 }
+    }
+}
+
+fn fate.best_height {
+    when fate.strategy == 1 { -> gpu.max_h }
+    when fate.strategy == 2 {
+        when gpu.max_h > 720 { -> 720 }
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 性能监控
+# ═══════════════════════════════════════════════════════════════
+
+fn fate.frame_begin {
+    perf.frame_start = @0x11002004
+}
+
+fn fate.frame_end {
+    frame_end = @0x11002004
+    perf.frame_time = frame_end - perf.frame_start
+    perf.frame_count = perf.frame_count + 1
+    
+    when perf.frame_time > 0 {
+        perf.fps = 1000 / perf.frame_time
+    }
+    
+    when perf.fps < 30 {
+        fate.collapse()
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# limit 语法
+# ═══════════════════════════════════════════════════════════════
+
+fn fate.set_limit percent {
+    fate.resource_limit = percent
+}
+
+intent limit {
+    action: fate.set_limit
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 初始化和报告
+# ═══════════════════════════════════════════════════════════════
+
+fn fate.init {
+    fate.enabled = true
+    fate.current_usage = 0
+    fate.peak_usage = 0
+    fate.collapse_count = 0
+    fate.strategy = 2
+    fate.mode = "dynamic"    # 启动时为动态模式
+    
+    # 初始化任务观测
+    task.compute_heavy = false
+    task.memory_heavy = false
+    task.io_heavy = false
+    task.pattern_count = 0
+    task.loop_count = 0
+    task.branch_ratio = 0.0
+    
+    gpu.ready = false
+    perf.frame_count = 0
+    perf.fps = 60
+    
+    unified.init()
+    tile.init()
+}
+
+# 禁用 Fate — 切换到静态模式
+fn fate.disable {
+    fate.enabled = false
+    fate.mode = "static"
+}
+
+# 启用 Fate — 切换到动态模式
+fn fate.enable {
+    fate.enabled = true
+    fate.mode = "dynamic"
+}
+
+# ═══════════════════════════════════════════════════════════════
+# fate on / fate off 语法
+# ═══════════════════════════════════════════════════════════════
+
+intent "fate on" {
+    action: fate.enable
+}
+
+intent "fate off" {
+    action: fate.disable
+}
+
+fn fate.report {
+    unified.report()
+    tile.report()
+}
+
+# ═══ codegen.wave ═══
+# 🌊 Wave 代码生成
+# 规则组合 → x86-64 机器码
+
+# ═══════════════════════════════════════════════════════════════
+# 机器码原语 (x86-64)
+# ═══════════════════════════════════════════════════════════════
+
+# 寄存器编码
+reg {
+    rax: 0
+    rcx: 1
+    rdx: 2
+    rbx: 3
+    rsp: 4
+    rbp: 5
+    rsi: 6
+    rdi: 7
+}
+
+# syscall 编号 (Linux)
+sys {
+    read: 0
+    write: 1
+    open: 2
+    close: 3
+    exit: 60
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 指令生成函数
+# ═══════════════════════════════════════════════════════════════
+
+# push rbp
+fn gen.push_rbp {
+    emit "\x55"
+}
+
+# pop rbp
+fn gen.pop_rbp {
+    emit "\x5d"
+}
+
+# mov rbp, rsp
+fn gen.mov_rbp_rsp {
+    emit "\x48\x89\xe5"
+}
+
+# mov rsp, rbp
+fn gen.mov_rsp_rbp {
+    emit "\x48\x89\xec"
+}
+
+# sub rsp, imm8
+fn gen.sub_rsp imm8 {
+    emit "\x48\x83\xec"
+    emit imm8
+}
+
+# mov rax, imm64
+fn gen.mov_rax imm64 {
+    emit "\x48\xb8"
+    emit imm64  # 8 bytes
+}
+
+# mov rdi, imm64
+fn gen.mov_rdi imm64 {
+    emit "\x48\xbf"
+    emit imm64
+}
+
+# mov rsi, imm64
+fn gen.mov_rsi imm64 {
+    emit "\x48\xbe"
+    emit imm64
+}
+
+# mov rdx, imm64
+fn gen.mov_rdx imm64 {
+    emit "\x48\xba"
+    emit imm64
+}
+
+# syscall
+fn gen.syscall {
+    emit "\x0f\x05"
+}
+
+# ret
+fn gen.ret {
+    emit "\xc3"
+}
+
+# jmp rel32
+fn gen.jmp offset {
+    emit "\xe9"
+    emit offset  # 4 bytes
+}
+
+# jz rel32
+fn gen.jz offset {
+    emit "\x0f\x84"
+    emit offset
+}
+
+# jnz rel32
+fn gen.jnz offset {
+    emit "\x0f\x85"
+    emit offset
+}
+
+# call rel32
+fn gen.call offset {
+    emit "\xe8"
+    emit offset
+}
+
+# test rax, rax
+fn gen.test_rax_rax {
+    emit "\x48\x85\xc0"
+}
+
+# pause (低功耗等待)
+fn gen.pause {
+    emit "\xf3\x90"
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 规则到机器码映射
+# ═══════════════════════════════════════════════════════════════
+
+# 函数序言 (boundary 规则：建立边界)
+fn codegen.prologue {
+    gen.push_rbp()
+    gen.mov_rbp_rsp()
+    gen.sub_rsp(64)
+}
+
+# 函数尾声 (boundary 规则：释放边界)
+fn codegen.epilogue {
+    gen.mov_rsp_rbp()
+    gen.pop_rbp()
+    gen.ret()
+}
+
+# 输出字符串 (tension + connection 规则)
+fn codegen.write_string addr len {
+    gen.mov_rax(sys.write)
+    gen.mov_rdi(1)          # stdout
+    gen.mov_rsi(addr)
+    gen.mov_rdx(len)
+    gen.syscall()
+}
+
+# 退出程序 (boundary 规则：终止)
+fn codegen.exit code {
+    gen.mov_rax(sys.exit)
+    gen.mov_rdi(code)
+    gen.syscall()
+}
+
+# 无限循环 (orbital 规则：闭合轨道)
+fn codegen.infinite_loop {
+    # jmp -5 (跳回自身)
+    emit "\xe9\xfb\xff\xff\xff"
+}
+
+# 事件循环 (orbital + memory 规则)
+fn codegen.event_loop {
+    # loop:
+    #   pause
+    #   jmp loop
+    gen.pause()
+    emit "\xeb\xfc"  # jmp -4
+}
+
+# 条件跳转 (tension + entropy 规则)
+fn codegen.conditional_jump condition target {
+    gen.test_rax_rax()
+    when condition == "zero" {
+        gen.jz(target)
+    }
+    when condition == "nonzero" {
+        gen.jnz(target)
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 意图编译
+# ═══════════════════════════════════════════════════════════════
+
+# 编译 out "text"
+fn compile.out text {
+    addr = data.add_string(text)
+    len = text.length + 1
+    codegen.write_string(addr, len)
+}
+
+# 编译 emit "bytes"
+fn compile.emit bytes {
+    emit bytes  # 直接输出
+}
+
+# 编译 fn name { body }
+fn compile.fn name body {
+    label.add(name)
+    codegen.prologue()
+    compile(body)
+    codegen.epilogue()
+}
+
+# 编译 loop { body }
+fn compile.loop body {
+    start = label.current()
+    compile(body)
+    gen.jmp(start - label.current() - 5)
+}
+
+# 编译 keep
+fn compile.keep {
+    codegen.event_loop()
+}
+
+# 编译 syscall.exit(code)
+fn compile.exit code {
+    codegen.exit(code)
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Fate 模式切换代码生成
+# ═══════════════════════════════════════════════════════════════
+
+# fate on — 启用动态优化
+fn compile.fate_enable {
+    # 设置 fate.enabled = true
+    # 地址: 0x401000 (fate 状态区)
+    gen.mov_rax(1)
+    emit "\x48\xa3"                    # mov [addr], rax
+    emit "\x00\x10\x40\x00\x00\x00\x00\x00"  # 0x401000
+}
+
+# fate off — 静态模式
+fn compile.fate_disable {
+    # 设置 fate.enabled = false
+    gen.mov_rax(0)
+    emit "\x48\xa3"
+    emit "\x00\x10\x40\x00\x00\x00\x00\x00"
+}
+
+# limit N — 资源限制
+fn compile.limit percent {
+    gen.mov_rax(percent)
+    emit "\x48\xa3"
+    emit "\x08\x10\x40\x00\x00\x00\x00\x00"  # 0x401008 (资源限制)
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Fate 优化钩子（动态模式时插入）
+# ═══════════════════════════════════════════════════════════════
+
+# 检查是否为动态模式
+fn codegen.check_fate_mode {
+    # 检查 [0x401000]
+    emit "\x48\xa1"
+    emit "\x00\x10\x40\x00\x00\x00\x00\x00"
+    gen.test_rax_rax()
+    # 返回值在 ZF 中
+}
+
+# 测量开始钩子
+fn codegen.fate_measure_begin {
+    # 保存时间戳到 [0x401010]
+    emit "\x0f\x31"                    # rdtsc
+    emit "\x48\xa3"
+    emit "\x10\x10\x40\x00\x00\x00\x00\x00"
+}
+
+# 测量结束钩子 + 边际收益检查
+fn codegen.fate_measure_end {
+    # 读取当前时间戳
+    emit "\x0f\x31"                    # rdtsc
+    # 减去开始时间
+    emit "\x48\x2b\x04\x25"
+    emit "\x10\x10\x40\x00"            # sub rax, [0x401010]
+    # 保存增量
+    emit "\x48\xa3"
+    emit "\x18\x10\x40\x00\x00\x00\x00\x00"  # 0x401018
+    
+    # 检查边际收益
+    # 如果增量 < 阈值，触发 Collapse
+    emit "\x48\x3d"                    # cmp rax, imm32
+    emit "\x00\x10\x00\x00"            # 0x1000 (阈值)
+    # 如果小于，跳转到 collapse
+}
+
+# 带 Fate 优化的循环
+fn codegen.loop_with_fate body {
+    start = label.current()
+    
+    # 检查 Fate 模式
+    codegen.check_fate_mode()
+    gen.jz(skip_measure)              # 静态模式跳过测量
+    
+    # 动态模式：插入测量
+    codegen.fate_measure_begin()
+    
+    skip_measure:
+    # 执行循环体
+    compile(body)
+    
+    # 检查 Fate 模式
+    codegen.check_fate_mode()
+    gen.jz(skip_check)
+    
+    # 动态模式：检查边际收益
+    codegen.fate_measure_end()
+    # 如果应该 Collapse，跳出循环
+    
+    skip_check:
+    gen.jmp(start - label.current() - 5)
+}
+
+# 带 Fate 优化的函数调用
+fn codegen.call_with_fate addr {
+    # 检查 Fate 模式
+    codegen.check_fate_mode()
+    gen.jz(static_call)
+    
+    # 动态模式：测量调用
+    codegen.fate_measure_begin()
+    gen.call(addr)
+    codegen.fate_measure_end()
+    gen.jmp(done)
+    
+    static_call:
+    gen.call(addr)
+    
+    done:
+}
+
+# ═══ compiler.wave ═══
+# 🌊 Wave 自举编译器
+# 解析源码 → 规则映射 → 代码生成
+
+
+# ═══════════════════════════════════════════════════════════════
+# 编译器状态
+# ═══════════════════════════════════════════════════════════════
+
+compiler {
+    source: ""
+    pos: 0
+    len: 0
+    fate_mode: true
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 编译入口
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.compile source {
+    compiler.source = source
+    compiler.pos = 0
+    compiler.len = source.length
+    
+    # 初始化
+    fate.init()
+    tile.init()
+    unified.init()
+    
+    # 平台内核初始化 — 自动检测平台
+    env.init()
+    
+    # 收集代码
+    code_buffer = []
+    
+    # 代码序言
+    code_buffer <- codegen.prologue()
+    
+    # 解析并编译到缓冲区
+    compiler.parse_all_to(code_buffer)
+    
+    # 代码尾声
+    code_buffer <- codegen.exit(0)
+    
+    # 通过平台内核输出（自动选择格式）
+    env.output(code_buffer)
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 解析主循环 — orbital 规则（循环轨道）
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_all {
+    loop {
+        compiler.skip_whitespace()
+        
+        when compiler.pos >= compiler.len {
+            break
+        }
+        
+        compiler.parse_statement()
+    }
+}
+
+fn compiler.parse_all_to buffer {
+    loop {
+        compiler.skip_whitespace()
+        
+        when compiler.pos >= compiler.len {
+            break
+        }
+        
+        compiler.parse_statement_to(buffer)
+    }
+}
+
+fn compiler.parse_statement_to buffer {
+    # 解析语句并收集到 buffer
+    compiler.parse_statement()
+    # 代码通过 emit 已输出到 buffer
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 语句解析 — tension 规则（选择性张力）
+# 根据首字符/关键字选择分支
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_statement {
+    # 注释 — entropy 规则（跳过无序）
+    when compiler.char() == 35 {  # '#'
+        compiler.skip_line()
+        return
+    }
+    
+    # out "text" — intent.out
+    when compiler.match("out ") {
+        compiler.pos = compiler.pos + 4
+        compiler.skip_whitespace()
+        text = compiler.parse_string()
+        compile.out(text)
+        return
+    }
+    
+    # emit "bytes" — intent.emit
+    when compiler.match("emit ") {
+        compiler.pos = compiler.pos + 5
+        compiler.skip_whitespace()
+        bytes = compiler.parse_string()
+        compile.emit(bytes)
+        return
+    }
+    
+    # fn name { body } — intent.fn
+    when compiler.match("fn ") {
+        compiler.pos = compiler.pos + 3
+        compiler.skip_whitespace()
+        name = compiler.parse_ident()
+        compiler.skip_whitespace()
+        body = compiler.parse_block()
+        compile.fn(name, body)
+        return
+    }
+    
+    # when cond { body } — intent.when
+    when compiler.match("when ") {
+        compiler.pos = compiler.pos + 5
+        cond = compiler.parse_expr()
+        body = compiler.parse_block()
+        compile.when(cond, body)
+        return
+    }
+    
+    # loop { body } — intent.loop
+    when compiler.match("loop") {
+        compiler.pos = compiler.pos + 4
+        compiler.skip_whitespace()
+        body = compiler.parse_block()
+        
+        when compiler.fate_mode {
+            codegen.loop_with_fate(body)
+        }
+        when compiler.fate_mode == false {
+            compile.loop(body)
+        }
+        return
+    }
+    
+    # keep — intent.keep
+    when compiler.match("keep") {
+        compiler.pos = compiler.pos + 4
+        compile.keep()
+        return
+    }
+    
+    # fate on/off — intent.fate
+    when compiler.match("fate on") {
+        compiler.pos = compiler.pos + 7
+        compiler.fate_mode = true
+        compile.fate_enable()
+        return
+    }
+    when compiler.match("fate off") {
+        compiler.pos = compiler.pos + 8
+        compiler.fate_mode = false
+        compile.fate_disable()
+        return
+    }
+    
+    # limit N — intent.limit
+    when compiler.match("limit ") {
+        compiler.pos = compiler.pos + 6
+        n = compiler.parse_number()
+        compile.limit(n)
+        return
+    }
+    
+    # syscall.exit(N)
+    when compiler.match("syscall.exit(") {
+        compiler.pos = compiler.pos + 13
+        code = compiler.parse_number()
+        compiler.pos = compiler.pos + 1  # ')'
+        compile.exit(code)
+        return
+    }
+    
+    # 变量赋值 x = value — intent.assign
+    when compiler.is_ident_start() {
+        name = compiler.parse_ident()
+        compiler.skip_whitespace()
+        when compiler.char() == 61 {  # '='
+            compiler.pos = compiler.pos + 1
+            compiler.skip_whitespace()
+            value = compiler.parse_expr()
+            compile.assign(name, value)
+            return
+        }
+        # 函数调用 name()
+        when compiler.char() == 40 {  # '('
+            compiler.pos = compiler.pos + 1
+            compiler.skip_whitespace()
+            compiler.pos = compiler.pos + 1  # ')'
+            compile.call(name)
+            return
+        }
+    }
+    
+    # 其他：跳过
+    compiler.pos = compiler.pos + 1
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 字符操作 — memory 规则（记忆存取）
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.char {
+    when compiler.pos < compiler.len {
+    }
+}
+
+fn compiler.peek offset {
+    idx = compiler.pos + offset
+    when idx < compiler.len {
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 匹配 — connection 规则（连接比较）
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.match expected {
+    i = 0
+    elen = expected.length
+    
+    loop {
+        when i >= elen {
+        }
+        
+        idx = compiler.pos + i
+        when idx >= compiler.len {
+        }
+        
+        when compiler.source[idx] != expected[i] {
+        }
+        
+        i = i + 1
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 跳过空白 — entropy 规则（无序跳过）
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.skip_whitespace {
+    loop {
+        when compiler.pos >= compiler.len { break }
+        
+        c = compiler.char()
+        
+        when c == 32 { compiler.pos = compiler.pos + 1 }   # 空格
+        when c == 9 { compiler.pos = compiler.pos + 1 }    # Tab
+        when c == 10 { compiler.pos = compiler.pos + 1 }   # LF
+        when c == 13 { compiler.pos = compiler.pos + 1 }   # CR
+        when c != 32 {
+            when c != 9 {
+                when c != 10 {
+                    when c != 13 { break }
+                }
+            }
+        }
+    }
+}
+
+fn compiler.skip_line {
+    loop {
+        when compiler.pos >= compiler.len { break }
+        c = compiler.char()
+        compiler.pos = compiler.pos + 1
+        when c == 10 { break }
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 解析字符串 — boundary 规则（边界定义）
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_string {
+    # 跳过开引号
+    when compiler.char() == 34 {
+        compiler.pos = compiler.pos + 1
+    }
+    
+    start = compiler.pos
+    
+    loop {
+        when compiler.pos >= compiler.len { break }
+        
+        c = compiler.char()
+        
+        # 结束引号
+        when c == 34 { break }
+        
+        # 转义
+        when c == 92 {
+            compiler.pos = compiler.pos + 2
+        }
+        when c != 92 {
+            compiler.pos = compiler.pos + 1
+        }
+    }
+    
+    end = compiler.pos
+    
+    # 跳过闭引号
+    when compiler.char() == 34 {
+        compiler.pos = compiler.pos + 1
+    }
+    
+    # 返回字符串（用 Tile 分配）
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 解析数字 — gravitational 规则（聚合）
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_number {
+    num = 0
+    
+    loop {
+        when compiler.pos >= compiler.len { break }
+        
+        c = compiler.char()
+        
+        # 数字 0-9 (ASCII 48-57)
+        when c >= 48 {
+            when c <= 57 {
+                digit = c - 48
+                num = num * 10 + digit
+                compiler.pos = compiler.pos + 1
+            }
+            when c > 57 { break }
+        }
+        when c < 48 { break }
+    }
+    
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 解析标识符 — boundary + connection
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.is_ident_start {
+    c = compiler.char()
+    # a-z A-Z _
+    when c >= 97 { when c <= 122 { -> true } }
+    when c >= 65 { when c <= 90 { -> true } }
+    when c == 95 { -> true }
+}
+
+fn compiler.is_ident_char {
+    c = compiler.char()
+    # a-z A-Z 0-9 _ .
+    when c >= 97 { when c <= 122 { -> true } }
+    when c >= 65 { when c <= 90 { -> true } }
+    when c >= 48 { when c <= 57 { -> true } }
+    when c == 95 { -> true }
+    when c == 46 { -> true }
+}
+
+fn compiler.parse_ident {
+    start = compiler.pos
+    
+    loop {
+        when compiler.pos >= compiler.len { break }
+        when compiler.is_ident_char() == false { break }
+        compiler.pos = compiler.pos + 1
+    }
+    
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 解析块 — boundary 规则（边界嵌套）
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_block {
+    compiler.skip_whitespace()
+    
+    # 跳过 '{'
+    when compiler.char() == 123 {
+        compiler.pos = compiler.pos + 1
+    }
+    
+    start = compiler.pos
+    depth = 1
+    
+    loop {
+        when compiler.pos >= compiler.len { break }
+        when depth == 0 { break }
+        
+        c = compiler.char()
+        
+        when c == 123 { depth = depth + 1 }
+        when c == 125 { depth = depth - 1 }
+        
+        compiler.pos = compiler.pos + 1
+    }
+    
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 解析表达式 — tension + gravitational
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_expr {
+    compiler.skip_whitespace()
+    
+    # 数字
+    c = compiler.char()
+    when c >= 48 {
+        when c <= 57 {
+        }
+    }
+    
+    # 标识符
+    when compiler.is_ident_start() {
+    }
+    
+    # 字符串
+    when c == 34 {
+    }
+    
+}
+
+# ═══ kernel.wave ═══
+# 🌊 Wave 跨平台最小内核
+# 已知平台 → 库加载
+# 未知平台 → Fate 探测学习
+
+# ═══════════════════════════════════════════════════════════════
+# 平台库 — 最小桥接，按需加载
+# ═══════════════════════════════════════════════════════════════
+
+lib {
+    linux: "platform/linux.wave"
+    macos: "platform/macos.wave"
+    windows: "platform/windows.wave"
+    # 未来平台自动添加
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 环境状态
+# ═══════════════════════════════════════════════════════════════
+
+env {
+    known: false      # 是否已知平台
+    lib_loaded: ""    # 加载的库
+    features: []      # 探测特征（未知平台用）
+    header: []
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 入口 — 尝试加载已知库，否则探测
+# ═══════════════════════════════════════════════════════════════
+
+fn env.init {
+    # 尝试加载已知平台库
+    env.try_load_lib()
+    
+    when env.known == false {
+        # 未知平台：Fate 探测
+        env.probe()
+        env.learn()
+    }
+}
+
+fn env.try_load_lib {
+    # 依次尝试加载库，哪个成功就用哪个
+    
+    when env.try_linux() {
+        env.known = true
+        env.lib_loaded = "linux"
+        return
+    }
+    
+    when env.try_macos() {
+        env.known = true
+        env.lib_loaded = "macos"
+        return
+    }
+    
+    when env.try_windows() {
+        env.known = true
+        env.lib_loaded = "windows"
+        return
+    }
+    
+    # 都失败 → 未知平台
+    env.known = false
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 平台检测 — 最小测试
+# ═══════════════════════════════════════════════════════════════
+
+fn env.try_linux {
+    # Linux: syscall 39 (getpid) 返回 > 0
+    emit "\x48\xc7\xc0\x27\x00\x00\x00"  # mov rax, 39
+    emit "\x0f\x05"                       # syscall
+}
+
+fn env.try_macos {
+    # macOS: syscall 编号不同，20 是 getpid
+    emit "\x48\xc7\xc0\x14\x00\x00\x00"  # mov rax, 20
+    emit "\x0f\x05"                       # syscall
+}
+
+fn env.try_windows {
+    # Windows: 检查 PEB 地址
+    emit "\x65\x48\x8b\x04\x25\x60\x00\x00\x00"  # mov rax, gs:[0x60]
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 输出 — 使用库或探测结果
+# ═══════════════════════════════════════════════════════════════
+
+fn env.output code {
+    env.init()
+    
+    when env.known {
+        # 已知平台：用库
+        env.output_with_lib(code)
+    }
+    when env.known == false {
+        # 未知平台：用探测结果
+        env.output_with_probe(code)
+    }
+}
+
+fn env.output_with_lib code {
+    when env.lib_loaded == "linux" {
+        linux.emit_header()
+    }
+    when env.lib_loaded == "macos" {
+        macos.emit_header()
+    }
+    when env.lib_loaded == "windows" {
+        windows.emit_header()
+    }
+    
+    emit code
+}
+
+fn env.output_with_probe code {
+    emit env.header
+    emit code
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 未知平台探测 — Fate 学习
+# ═══════════════════════════════════════════════════════════════
+
+fn env.probe {
+    env.probe_word()
+    env.probe_syscall()
+    env.probe_memory()
+}
+
+fn env.probe_word {
+    emit "\x48\x31\xc0"
+    env.features <- 64
+}
+
+fn env.probe_syscall {
+    emit "\x48\xc7\xc0\x27\x00\x00\x00"
+    emit "\x0f\x05"
+    env.features <- @rax
+}
+
+fn env.probe_memory {
+    env.features <- @0x400000
+}
+
+fn env.learn {
+    unified.information_density = len(env.features) / 10.0
+    env.header = env.emerge_header()
+}
+
+fn env.emerge_header {
+    header = []
+    header <- 0x57  # 'W'
+    header <- 0x41  # 'A'
+    header <- 0x56  # 'V'
+    header <- 0x45  # 'E'
+    
+    when 64 in env.features {
+        header <- 0x02
+    }
+    when 64 not in env.features {
+        header <- 0x01
+    }
+    
+}
+
+# ═══ linux.wave ═══
+# 🐧 Linux 最小桥接
+
+fn linux.emit_header {
+    # ELF64 头
+    emit "\x7fELF"           # magic
+    emit "\x02"              # 64-bit
+    emit "\x01"              # little endian
+    emit "\x01"              # version
+    emit "\x00\x00\x00\x00\x00\x00\x00\x00\x00"  # padding
+    emit "\x02\x00"          # executable
+    emit "\x3e\x00"          # x86_64
+    emit "\x01\x00\x00\x00"  # version
+}
+
+fn linux.syscall num {
+    emit "\x48\xc7\xc0"      # mov rax, num
+    emit num
+    emit "\x0f\x05"          # syscall
+}
+
+fn linux.exit code {
+    linux.syscall(60)
+}
+
+# ═══ macos.wave ═══
+# 🍎 macOS 最小桥接
+
+fn macos.emit_header {
+    # Mach-O 64 头
+    emit "\xcf\xfa\xed\xfe"  # MH_MAGIC_64
+    emit "\x07\x00\x00\x01"  # x86_64
+    emit "\x03\x00\x00\x00"  # CPU subtype
+    emit "\x02\x00\x00\x00"  # MH_EXECUTE
+}
+
+fn macos.syscall num {
+    # macOS syscall: num + 0x2000000
+    adjusted = num + 0x2000000
+    emit "\x48\xc7\xc0"
+    emit adjusted
+    emit "\x0f\x05"
+}
+
+fn macos.exit code {
+    macos.syscall(1)
+}
+
+# ═══ windows.wave ═══
+# 🪟 Windows 最小桥接
+
+fn windows.emit_header {
+    # PE 头
+    emit "MZ"                # DOS magic
+    emit "\x90\x00"          # DOS stub padding
+    emit "\x03\x00\x00\x00"
+    emit "\x04\x00\x00\x00"
+    emit "\xff\xff\x00\x00"
+    # ... 简化 DOS header
+    
+    # PE signature at 0x3C
+    emit "PE\x00\x00"
+    emit "\x64\x86"          # x86_64
+}
+
+fn windows.exit code {
+    # Windows: call ExitProcess
+    # 需要 kernel32.dll
+    emit "\x48\x31\xc9"      # xor rcx, rcx (exit code 0)
+    # call [ExitProcess]
+}
+
+
+fate.init()
+tile.init()
+unified.init()
+env.init()
+source = file.read(0, 0x10000)
+compiler.compile(source)
+syscall.exit(0)
+
