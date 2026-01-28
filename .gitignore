@@ -1,0 +1,22 @@
+# Compiled binaries
+bin/wavec
+bin/wave5
+*.o
+*.out
+
+# Test outputs
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Build artifacts
+*.exe
+*.elf

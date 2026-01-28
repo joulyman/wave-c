@@ -1,0 +1,23 @@
+# 代数化布局测试
+# 所有坐标使用 0.0-1.0 比例
+
+out "=== 代数化布局测试 ==="
+
+# 设置布局比例
+layout.ratio 0.5
+layout.standard    # 4:3 宽高比
+
+# 使用代数化坐标绘图
+draw.a_rect 0.0 0.0 1.0 1.0 0x1A1A2E    # 全屏背景
+draw.a_rect 0.05 0.05 0.9 0.9 0x263238   # 内边框
+draw.a_rect 0.1 0.1 0.8 0.35 0x37474F    # 顶部区域
+draw.a_text 0.35 0.25 "Wave UI" 0xECEFF1  # 标题
+draw.a_rect 0.2 0.5 0.6 0.15 0x1565C0    # 按钮
+draw.a_text 0.4 0.55 "Click" 0xFFFFFF     # 按钮文字
+draw.a_circle 0.5 0.8 0.05 0xFF5722      # 圆形装饰
+
+draw.render
+draw.save "output/algebraic_layout.ppm"
+
+out "完成: output/algebraic_layout.ppm"
+syscall.exit(0)

@@ -1,0 +1,120 @@
+# 🎨 自适应 GUI 示例
+# Fate 完全自由适应环境
+
+use drivers/bridge
+use drivers/fate_adapt
+
+# ═══════════════════════════════════════════════════════════════
+# 应用状态
+# ═══════════════════════════════════════════════════════════════
+
+app {
+    color: 0xFF0000
+    x: 100
+    y: 100
+    running: true
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 绘制函数
+# ═══════════════════════════════════════════════════════════════
+
+fn draw_rect x y w h color {
+    row = 0
+    loop {
+        when row >= h { break }
+        col = 0
+        loop {
+            when col >= w { break }
+            bridge.pixel (x + col) (y + row) color
+            col = col + 1
+        }
+        row = row + 1
+    }
+}
+
+fn draw_frame {
+    # 清屏 (用 Fate 的 quality 决定是否全清)
+    when fate.quality > 0.5 {
+        draw_rect 0 0 bridge.width bridge.height 0x000000
+    }
+    
+    # 绘制移动的方块
+    size = 50 * fate.quality
+    when size < 10 { size = 10 }
+    
+    draw_rect app.x app.y size size app.color
+    
+    # 移动
+    app.x = app.x + 2
+    when app.x > bridge.width {
+        app.x = 0
+        # 改变颜色
+        app.color = app.color + 0x010101
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 输入处理
+# ═══════════════════════════════════════════════════════════════
+
+fn handle_input {
+    when bridge.has_input() {
+        event = bridge.read_input()
+        
+        # ESC 退出
+        when event == 0x01 {
+            app.running = false
+        }
+        
+        # 方向键
+        when event == 0x48 { app.y = app.y - 10 }
+        when event == 0x50 { app.y = app.y + 10 }
+        when event == 0x4B { app.x = app.x - 10 }
+        when event == 0x4D { app.x = app.x + 10 }
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 主循环
+# ═══════════════════════════════════════════════════════════════
+
+fn main {
+    # Fate 观测环境
+    fate.observe()
+    
+    out "=== 自适应 GUI ==="
+    out "显示: "
+    out bridge.width
+    out "x"
+    out bridge.height
+    out " 像素: "
+    out fate.pixels
+    
+    loop {
+        fate.measure_begin()
+        
+        handle_input()
+        draw_frame()
+        
+        fate.measure_end()
+        fate.adjust()
+        
+        # 输出 Fate 状态
+        out "Fate: batch="
+        out fate.batch_size
+        out " quality="
+        out fate.quality
+        out " fps="
+        when fate.avg_frame_time > 0 {
+            fps = @addr.time.freq / fate.avg_frame_time
+            out fps
+        }
+        
+        when app.running == false { break }
+    }
+    
+    out "退出"
+}
+
+main()

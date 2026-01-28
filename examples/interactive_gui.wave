@@ -1,0 +1,50 @@
+# 🖼️ Wave 交互式 GUI 示例
+# 统一架构：声明 UI，Fate 处理一切
+
+gui tile
+
+# ==========================================
+# 窗口声明
+# ==========================================
+
+window "Wave Interactive Demo" 800 600
+
+# ==========================================
+# UI 组件（声明式）
+# ==========================================
+
+# 背景
+draw.rect 0 0 800 600 0x1A1A2E
+
+# 标题栏
+draw.rect 0 0 800 50 0x2D2D3D
+draw.text "Wave GUI - Unified Architecture" 20 15 0xFFFFFF
+
+# 计数器显示区
+draw.rect 250 150 300 100 0x282838
+draw.text "Counter: 0" 320 190 0xFFFFFF
+
+# 增加按钮
+draw.rect 300 280 200 60 0x7C3AED
+draw.text "Increment" 350 300 0xFFFFFF
+
+# 减少按钮
+draw.rect 300 360 200 60 0xE94560
+draw.text "Decrement" 345 380 0xFFFFFF
+
+# 重置按钮
+draw.rect 300 440 200 60 0x2E86AB
+draw.text "Reset" 370 460 0xFFFFFF
+
+# 状态栏
+draw.rect 0 580 800 20 0x2D2D3D
+draw.text "Fate: Active | Bridge: Auto | Events: Ready" 10 583 0x666666
+
+# ==========================================
+# 渲染
+# ==========================================
+
+draw.render
+draw.save "interactive_gui.ppm"
+
+out "Interactive GUI ready - Fate controls lifecycle"
