@@ -1,0 +1,26 @@
+# 简单 GUI 测试
+# 使用传统赋值避免 -> 调试输出
+
+# 初始化
+fate on
+
+# 设置布局比例
+layout.ratio(0.8)
+layout.aspect(16/9)
+
+# 创建窗口
+window.create("Wave GUI Test", 800, 450)
+
+# 创建组件
+component.button("btn1", 100, 100, 200, 50, "Button 1")
+component.button("btn2", 100, 170, 200, 50, "Button 2")
+component.input("input1", 100, 250, 300, 40)
+
+# 代数化绘图 - 使用比例坐标
+draw.a_rect(0.1, 0.7, 0.8, 0.2, 0x3498DB)
+draw.a_circle(0.5, 0.4, 0.1, 0xFF5733)
+
+# 渲染
+render()
+
+out "GUI 测试完成"

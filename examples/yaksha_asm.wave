@@ -1,0 +1,264 @@
+# 🔐 Yaksha Cipher - Direct x86-64 Assembly Generation
+# AVX2 optimized encryption kernel
+# Compiles to raw machine code
+
+# ═══════════════════════════════════════════════════════════════
+# ELF64 Header (minimal, 120 bytes)
+# ═══════════════════════════════════════════════════════════════
+
+# ELF magic + class + data + version + OS/ABI + padding
+emit "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+# type (exec) + machine (x86-64) + version
+emit "\x02\x00\x3e\x00\x01\x00\x00\x00"
+# entry point (0x400078 = header size)
+emit "\x78\x00\x40\x00\x00\x00\x00\x00"
+# program header offset
+emit "\x40\x00\x00\x00\x00\x00\x00\x00"
+# section header offset (0)
+emit "\x00\x00\x00\x00\x00\x00\x00\x00"
+# flags + ehsize + phentsize + phnum
+emit "\x00\x00\x00\x00\x40\x00\x38\x00\x01\x00\x00\x00\x00\x00\x00\x00"
+# program header: type (LOAD) + flags (RWX)
+emit "\x01\x00\x00\x00\x07\x00\x00\x00"
+# offset + vaddr
+emit "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x40\x00\x00\x00\x00\x00"
+# paddr + filesz
+emit "\x00\x00\x40\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00"
+# memsz + align
+emit "\x00\x08\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00"
+
+# ═══════════════════════════════════════════════════════════════
+# Code starts at 0x400078
+# ═══════════════════════════════════════════════════════════════
+
+# === Setup ===
+# push rbp; mov rbp, rsp; sub rsp, 0x100
+emit "\x55\x48\x89\xe5\x48\x81\xec\x00\x01\x00\x00"
+
+# === Print banner ===
+# mov rax, 1 (write)
+emit "\x48\xc7\xc0\x01\x00\x00\x00"
+# mov rdi, 1 (stdout)
+emit "\x48\xc7\xc7\x01\x00\x00\x00"
+# lea rsi, [rip + banner_offset]
+emit "\x48\x8d\x35"
+emit "\x00\x03\x00\x00"  # offset to banner (will be at end)
+# mov rdx, banner_len (48)
+emit "\x48\xc7\xc2\x30\x00\x00\x00"
+# syscall
+emit "\x0f\x05"
+
+# ═══════════════════════════════════════════════════════════════
+# Yaksha Core Encryption - AVX2 Version
+# rsi = input, rdi = output, rcx = length, r8 = key
+# ═══════════════════════════════════════════════════════════════
+
+# === yaksha_encrypt: ===
+# Process 32 bytes at a time with AVX2
+
+# label: yaksha_encrypt
+# Input setup (test data at stack)
+# mov rsi, rsp      ; input
+emit "\x48\x89\xe6"
+# lea rdi, [rsp+64] ; output
+emit "\x48\x8d\x7c\x24\x40"
+# mov rcx, 64       ; length
+emit "\x48\xc7\xc1\x40\x00\x00\x00"
+
+# Store test plaintext "Hello, Yaksha Cipher! Testing AVX2 encryption now."
+# mov qword [rsp], "Hello, Y"
+emit "\x48\xc7\x04\x24\x48\x65\x6c\x6c"
+emit "\x48\xc7\x44\x24\x04\x6f\x2c\x20\x59"
+# ... (simplified - would need full string)
+
+# === Main encryption loop (AVX2) ===
+# xor r9, r9        ; position counter
+emit "\x4d\x31\xc9"
+
+# .encrypt_loop:
+# cmp r9, rcx
+emit "\x4c\x39\xc9"
+# jge .encrypt_done
+emit "\x0f\x8d\x60\x00\x00\x00"
+
+# Check if we have 32 bytes left for AVX2
+# mov rax, rcx
+emit "\x48\x89\xc8"
+# sub rax, r9
+emit "\x4c\x29\xc8"
+# cmp rax, 32
+emit "\x48\x83\xf8\x20"
+# jl .scalar_path
+emit "\x7c\x40"
+
+# === AVX2 Path (32 bytes) ===
+# vmovdqu ymm0, [rsi + r9]    ; load 32 bytes
+emit "\xc4\xa1\x7e\x6f\x04\x0e"
+
+# vbroadcastss ymm1, [key]     ; broadcast key byte
+emit "\xc4\xe2\x7d\x18\x0d"
+emit "\x00\x02\x00\x00"  # offset to key
+
+# vpxor ymm2, ymm0, ymm1       ; XOR with key
+emit "\xc5\xfd\xef\xd1"
+
+# vpaddb ymm3, ymm2, ymm1      ; add key (wrapping)
+emit "\xc4\xe2\x6d\xfc\xd9"
+
+# Rotation: vpsllw + vpsrlw + vpor (simulate byte rotate)
+# vpsllw ymm4, ymm3, 3
+emit "\xc5\xdd\x71\xf3\x03"
+# vpsrlw ymm5, ymm3, 5
+emit "\xc5\xd5\x71\xd3\x05"
+# vpor ymm6, ymm4, ymm5
+emit "\xc5\xdd\xeb\xf5"
+
+# vmovdqu [rdi + r9], ymm6     ; store result
+emit "\xc4\xa1\x7e\x7f\x34\x0f"
+
+# add r9, 32
+emit "\x49\x83\xc1\x20"
+# jmp .encrypt_loop
+emit "\xeb\xb0"
+
+# === Scalar Path (< 32 bytes) ===
+# .scalar_path:
+# mov al, [rsi + r9]
+emit "\x42\x8a\x04\x0e"
+# xor al, [key]
+emit "\x32\x05"
+emit "\x00\x02\x00\x00"
+# add al, [key]
+emit "\x02\x05"
+emit "\x00\x02\x00\x00"
+# rol al, 3
+emit "\xc0\xc0\x03"
+# mov [rdi + r9], al
+emit "\x42\x88\x04\x0f"
+# inc r9
+emit "\x49\xff\xc1"
+# jmp .encrypt_loop
+emit "\xeb\x98"
+
+# .encrypt_done:
+
+# === Cascade XOR ===
+# mov al, 0x5A      ; initial cascade
+emit "\xb0\x5a"
+# xor r10, r10      ; i = 0
+emit "\x4d\x31\xd2"
+
+# .cascade_loop:
+# cmp r10, rcx
+emit "\x4c\x39\xd1"
+# jge .cascade_done
+emit "\x7d\x12"
+
+# xor [rdi + r10], al
+emit "\x42\x30\x04\x17"
+# rol al, 1
+emit "\xd0\xc0"
+# xor al, [rdi + r10]
+emit "\x42\x32\x04\x17"
+# inc r10
+emit "\x49\xff\xc2"
+# jmp .cascade_loop
+emit "\xeb\xea"
+
+# .cascade_done:
+
+# === Print result ===
+# mov rax, 1 (write)
+emit "\x48\xc7\xc0\x01\x00\x00\x00"
+# mov rdi, 1 (stdout)  
+emit "\x48\xc7\xc7\x01\x00\x00\x00"
+# lea rsi, [rsp+64] (output buffer)
+emit "\x48\x8d\x74\x24\x40"
+# mov rdx, 64
+emit "\x48\xc7\xc2\x40\x00\x00\x00"
+# syscall
+emit "\x0f\x05"
+
+# === Print newline ===
+emit "\x48\xc7\xc0\x01\x00\x00\x00"
+emit "\x48\xc7\xc7\x01\x00\x00\x00"
+emit "\x48\x8d\x35"
+emit "\x80\x01\x00\x00"  # offset to newline
+emit "\x48\xc7\xc2\x01\x00\x00\x00"
+emit "\x0f\x05"
+
+# === Benchmark loop (1M iterations) ===
+# Print benchmark message
+emit "\x48\xc7\xc0\x01\x00\x00\x00"
+emit "\x48\xc7\xc7\x01\x00\x00\x00"
+emit "\x48\x8d\x35"
+emit "\x40\x01\x00\x00"
+emit "\x48\xc7\xc2\x20\x00\x00\x00"
+emit "\x0f\x05"
+
+# rdtsc before
+emit "\x0f\x31"
+# mov r12, rax
+emit "\x49\x89\xc4"
+# mov r13, rdx
+emit "\x49\x89\xd5"
+
+# mov r11, 1000000  ; 1M iterations
+emit "\x49\xc7\xc3\x40\x42\x0f\x00"
+
+# .bench_loop:
+# Simple encrypt simulation (64 bytes)
+emit "\x48\x31\xc0"
+emit "\x48\x31\xc9"
+# .inner:
+emit "\x48\x83\xf9\x40"
+emit "\x7d\x0a"
+emit "\x30\x44\x0c\x40"
+emit "\xd0\xc0"
+emit "\x48\xff\xc1"
+emit "\xeb\xf2"
+# dec r11
+emit "\x49\xff\xcb"
+# jnz .bench_loop
+emit "\x75\xe6"
+
+# rdtsc after
+emit "\x0f\x31"
+# sub rax, r12 (cycles)
+emit "\x4c\x29\xe0"
+
+# Print done message
+emit "\x48\xc7\xc0\x01\x00\x00\x00"
+emit "\x48\xc7\xc7\x01\x00\x00\x00"
+emit "\x48\x8d\x35"
+emit "\x60\x01\x00\x00"
+emit "\x48\xc7\xc2\x10\x00\x00\x00"
+emit "\x0f\x05"
+
+# === Exit ===
+# mov rax, 60 (exit)
+emit "\x48\xc7\xc0\x3c\x00\x00\x00"
+# xor rdi, rdi (code 0)
+emit "\x48\x31\xff"
+# syscall
+emit "\x0f\x05"
+
+# ═══════════════════════════════════════════════════════════════
+# Data Section
+# ═══════════════════════════════════════════════════════════════
+
+# Key (16 bytes)
+emit "secret_key_1234!"
+
+# Banner
+emit "Yaksha Cipher AVX2 - Wave Compiled\n"
+emit "===================================\n"
+
+# Benchmark message
+emit "\nBenchmark: 1M x 64B...\n"
+
+# Done message
+emit "Done. Cycles: N/A\n"
+
+# Newline
+emit "\x0a"

@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave | Adaptive Rule-Driven Compiler</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface2: #181824;
+            --border: #1e1e2e;
+            --text: #e4e4ef;
+            --muted: #6e6e8a;
+            --accent: #4fc3f7;
+            --accent-dim: #2a5a6e;
+            --green: #4caf50;
+            --orange: #ff9800;
+            --purple: #ab47bc;
+            --red: #ef5350;
+            --cyan: #26c6da;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .logo { font-size: 5rem; margin-bottom: 0.5rem; }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--accent), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            color: var(--muted);
+            font-size: 1.2rem;
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+        }
+
+        .badges {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .badge.green { color: var(--green); border-color: var(--green); }
+        .badge.orange { color: var(--orange); border-color: var(--orange); }
+        .badge.purple { color: var(--purple); border-color: var(--purple); }
+
+        section { margin-bottom: 3.5rem; }
+
+        h2 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        h2::before {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        p { color: var(--muted); margin-bottom: 1rem; font-size: 1.05rem; }
+
+        /* Hero Diagram */
+        .hero-diagram {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .flow-main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .flow-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .flow-box:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .flow-box.highlight { border-color: var(--accent); background: var(--accent-dim); }
+
+        .arrow { color: var(--accent); font-size: 1.2rem; }
+
+        /* Features Grid */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .feature {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .feature:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+        .feature-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+
+        .feature-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* Versions */
+        .versions-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .versions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .version {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.75rem;
+            text-align: center;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .version:hover { border-color: var(--accent); transform: translateY(-4px); }
+
+        .version-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+        .version-name {
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .version-tag {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .tag-c { background: var(--green); color: #000; }
+        .tag-asm { background: var(--orange); color: #000; }
+        .tag-bin { background: var(--purple); color: #fff; }
+
+        .version-desc {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .version-features {
+            font-size: 0.75rem;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+        }
+
+        .version a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg);
+            color: var(--text);
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .version a:hover { border-color: var(--accent); background: var(--accent-dim); }
+
+        /* Parameters */
+        .params {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+
+        .param {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem 2rem;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .param .symbol {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .param .name {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 0.25rem;
+        }
+
+        .param .effect {
+            font-size: 0.7rem;
+            color: var(--cyan);
+            margin-top: 0.5rem;
+        }
+
+        /* Code */
+        pre {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.8;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .code-label {
+            font-size: 0.7rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        /* Adaptive Features */
+        .adaptive-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.25rem;
+        }
+
+        .adaptive-card {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .adaptive-card h3 {
+            color: var(--accent);
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .adaptive-card ul {
+            list-style: none;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .adaptive-card li {
+            padding: 0.3rem 0;
+            padding-left: 1.25rem;
+            position: relative;
+        }
+
+        .adaptive-card li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--cyan);
+        }
+
+        footer {
+            text-align: center;
+            padding-top: 2.5rem;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 800px) {
+            .versions { grid-template-columns: 1fr; }
+            .adaptive-grid { grid-template-columns: 1fr; }
+            .flow-main { flex-direction: column; }
+            h1 { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🌊</div>
+            <h1>Wave</h1>
+            <p class="tagline">Adaptive · Dynamic · Self-Driving Compiler</p>
+            <div class="badges">
+                <span class="badge">Alpha 1.0</span>
+                <span class="badge green">Self-Hosting</span>
+                <span class="badge orange">Platform Adaptive</span>
+                <span class="badge purple">Hardware Aware</span>
+            </div>
+        </header>
+
+        <section>
+            <h2>Core Architecture</h2>
+            <p>Wave doesn't hardcode behavior. It derives everything from three parameters, enabling <strong>dynamic adaptation</strong> to any platform or hardware.</p>
+            <div class="hero-diagram">
+                <div class="flow-main">
+                    <div class="flow-box">Source Code</div>
+                    <span class="arrow">→</span>
+                    <div class="flow-box highlight">Unified Field (i, e, r)</div>
+                    <span class="arrow">→</span>
+                    <div class="flow-box">Derived Rules</div>
+                    <span class="arrow">→</span>
+                    <div class="flow-box">Fate Scheduler</div>
+                    <span class="arrow">→</span>
+                    <div class="flow-box">Adaptive Output</div>
+                </div>
+                <p style="text-align:center; font-size:0.85rem; margin:0;">
+                    <span style="color:var(--cyan)">Runtime observation</span> enables dynamic optimization and hardware adaptation
+                </p>
+            </div>
+        </section>
+
+        <section>
+            <h2>Adaptive Capabilities</h2>
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🔄</div>
+                    <div class="feature-title">Dynamic Optimization</div>
+                    <div class="feature-desc">Fate Scheduler observes execution patterns and collapses optimization paths when marginal gain falls below threshold. Automatically switches between static and dynamic modes.</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🖥️</div>
+                    <div class="feature-title">Platform Adaptation</div>
+                    <div class="feature-desc">Single codebase adapts to Linux, macOS, Windows, bare metal. Platform probing at runtime with fallback compatibility layers.</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚙️</div>
+                    <div class="feature-title">Hardware Aware</div>
+                    <div class="feature-desc">Tile Memory Manager with four pools (BlackHole, MeshBrain, MultiNova, BaseForce) adapts allocation strategy based on hardware characteristics.</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🎨</div>
+                    <div class="feature-title">GUI Integration</div>
+                    <div class="feature-desc">Native GUI support through platform bridge. Define UI with Wave syntax, Fate handles rendering optimization per platform.</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-title">Rule-Driven Codegen</div>
+                    <div class="feature-desc">Six derived rule categories (gravitational, tension, entropy, connection, memory, orbital) generate code behavior from unified parameters.</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔁</div>
+                    <div class="feature-title">Self-Hosting</div>
+                    <div class="feature-desc">Bootstrap compilers written in Wave demonstrate the language compiling itself. Full self-hosting capability.</div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>The Three Parameters</h2>
+            <p>All behavior emerges from these three values:</p>
+            <div class="params">
+                <div class="param">
+                    <div class="symbol">i</div>
+                    <div class="name">information density</div>
+                    <div class="effect">compress ↔ expand</div>
+                </div>
+                <div class="param">
+                    <div class="symbol">e</div>
+                    <div class="name">entropy gradient</div>
+                    <div class="effect">stable ↔ variable</div>
+                </div>
+                <div class="param">
+                    <div class="symbol">r</div>
+                    <div class="name">relation strength</div>
+                    <div class="effect">cache ↔ recompute</div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Three Implementations</h2>
+            <div class="versions">
+                <div class="version">
+                    <div class="version-icon">⚙️</div>
+                    <div class="version-name">Wave-C</div>
+                    <span class="version-tag tag-c">C Bootstrap</span>
+                    <div class="version-desc">Full-featured reference compiler<br>All platforms, complete syntax</div>
+                    <div class="version-features">✓ Fate ✓ Tile ✓ GUI ✓ Platform Adapt</div>
+                    <a href="https://github.com/joulyman/wave-c">GitHub →</a>
+                </div>
+                <div class="version">
+                    <div class="version-icon">🔧</div>
+                    <div class="version-name">Wave-ASM</div>
+                    <span class="version-tag tag-asm">Assembly</span>
+                    <div class="version-desc">Pure x86-64 assembly<br>No libc dependency, ~8KB</div>
+                    <div class="version-features">✓ Direct syscall ✓ Minimal footprint</div>
+                    <a href="https://github.com/joulyman/wave-asm">GitHub →</a>
+                </div>
+                <div class="version">
+                    <div class="version-icon">💾</div>
+                    <div class="version-name">Wave-BIN</div>
+                    <span class="version-tag tag-bin">Raw Binary</span>
+                    <div class="version-desc">No OS required<br>4KB bootable blob</div>
+                    <div class="version-features">✓ Bare metal ✓ BIOS/UEFI ready</div>
+                    <a href="https://github.com/joulyman/wave-bin">GitHub →</a>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Adaptive Features</h2>
+            <div class="adaptive-grid">
+                <div class="adaptive-card">
+                    <h3>🎯 Fate Scheduler</h3>
+                    <ul>
+                        <li>Runtime execution observation</li>
+                        <li>Dynamic → Static mode switching</li>
+                        <li>Marginal gain threshold collapse</li>
+                        <li>Automatic hotpath detection</li>
+                    </ul>
+                </div>
+                <div class="adaptive-card">
+                    <h3>💾 Tile Memory</h3>
+                    <ul>
+                        <li>Four adaptive memory pools</li>
+                        <li>BlackHole: extreme compression</li>
+                        <li>MeshBrain: neural-like allocation</li>
+                        <li>Hardware-aware pool selection</li>
+                    </ul>
+                </div>
+                <div class="adaptive-card">
+                    <h3>🖥️ Platform Bridge</h3>
+                    <ul>
+                        <li>Linux/macOS/Windows/Bare metal</li>
+                        <li>Runtime platform probing</li>
+                        <li>Syscall abstraction layer</li>
+                        <li>Compatibility fallbacks</li>
+                    </ul>
+                </div>
+                <div class="adaptive-card">
+                    <h3>🎨 GUI System</h3>
+                    <ul>
+                        <li>Declarative UI in Wave syntax</li>
+                        <li>Platform-native rendering</li>
+                        <li>Event-driven with Fate optimization</li>
+                        <li>Framebuffer / X11 / Win32 backends</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Example Code</h2>
+            <span class="code-label">Platform-adaptive hello world</span>
+<pre><span style="color:var(--muted)">// Configure Unified Field</span>
+unified {
+    i: 0.8   <span style="color:var(--muted)">// high density</span>
+    e: 0.2   <span style="color:var(--muted)">// low entropy</span>
+    r: 0.9   <span style="color:var(--muted)">// strong caching</span>
+}
+
+<span style="color:var(--muted)">// Fate will optimize based on observation</span>
+fate on
+
+<span style="color:var(--muted)">// Platform-agnostic output</span>
+out "Hello from Wave!\n"
+
+<span style="color:var(--muted)">// Memory operations (adaptive)</span>
+buf = syscall.mmap(0, 4096, 3, 34, -1, 0)
+poke(buf, 65)
+c = peek(buf)
+
+syscall.exit(0)</pre>
+        </section>
+
+        <section>
+            <h2>Quick Start</h2>
+<pre><span style="color:var(--muted)"># Clone Wave-C (recommended)</span>
+git clone https://github.com/joulyman/wave-c
+cd wave-c
+
+<span style="color:var(--muted)"># Build compiler</span>
+gcc -o wavec src/wave5.c -O2 -lm
+
+<span style="color:var(--muted)"># Compile and run</span>
+./wavec examples/hello.wave -o hello
+./hello
+
+<span style="color:var(--muted)"># Use self-hosting bootstrap</span>
+./wavec src/wavec_bootstrap.wave -o bootstrap
+<span style="color:var(--muted)"># bootstrap reads /tmp/input.wave → /tmp/output</span></pre>
+        </section>
+
+        <footer>
+            <p>© 2026 <strong>Jouly Mars</strong> (ZHUOLI MA) · <a href="https://rogueintelligence.com">Rogue Intelligence LNC.</a></p>
+            <p style="margin-top:0.5rem; font-size:0.75rem;">
+                <a href="https://github.com/joulyman/wave-c">Wave-C</a> · 
+                <a href="https://github.com/joulyman/wave-asm">Wave-ASM</a> · 
+                <a href="https://github.com/joulyman/wave-bin">Wave-BIN</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

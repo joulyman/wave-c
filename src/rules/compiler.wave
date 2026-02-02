@@ -1,0 +1,792 @@
+# 🌊 Wave 编译器
+# 完整语法解析 → 规则映射 → 代码生成
+
+use rules/fate
+use rules/unified
+use rules/tile
+use rules/codegen
+use platform/kernel
+
+# ═══════════════════════════════════════════════════════════════
+# 编译器状态
+# ═══════════════════════════════════════════════════════════════
+
+compiler {
+    source: ""
+    pos: 0
+    len: 0
+    fate_mode: true
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 编译入口
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.compile source {
+    compiler.source = source
+    compiler.pos = 0
+    compiler.len = source.length
+    
+    fate.init()
+    tile.init()
+    unified.init()
+    env.init()
+    
+    codegen.prologue()
+    compiler.parse_all()
+    codegen.exit(0)
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 主循环
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_all {
+    loop {
+        compiler.skip_whitespace()
+        when compiler.pos >= compiler.len { break }
+        compiler.parse_statement()
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 语句解析 — 完整语法
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_statement {
+    # 注释
+    when compiler.char() == 35 {
+        compiler.skip_line()
+        return
+    }
+    
+    # out "text"
+    when compiler.match("out ") {
+        compiler.pos = compiler.pos + 4
+        compiler.skip_whitespace()
+        text = compiler.parse_string()
+        compile.out(text)
+        return
+    }
+    
+    # emit "bytes"
+    when compiler.match("emit ") {
+        compiler.pos = compiler.pos + 5
+        compiler.skip_whitespace()
+        bytes = compiler.parse_string()
+        compile.emit(bytes)
+        return
+    }
+    
+    # fn name { body }
+    when compiler.match("fn ") {
+        compiler.pos = compiler.pos + 3
+        compiler.skip_whitespace()
+        name = compiler.parse_ident()
+        compiler.skip_whitespace()
+        body = compiler.parse_block()
+        compile.fn(name, body)
+        return
+    }
+    
+    # when cond { body }
+    when compiler.match("when ") {
+        compiler.pos = compiler.pos + 5
+        cond = compiler.parse_expr()
+        body = compiler.parse_block()
+        compile.when(cond, body)
+        return
+    }
+    
+    # otherwise { body }
+    when compiler.match("otherwise") {
+        compiler.pos = compiler.pos + 9
+        compiler.skip_whitespace()
+        body = compiler.parse_block()
+        compile.otherwise(body)
+        return
+    }
+    
+    # loop { body }
+    when compiler.match("loop") {
+        compiler.pos = compiler.pos + 4
+        compiler.skip_whitespace()
+        body = compiler.parse_block()
+        when compiler.fate_mode {
+            codegen.loop_with_fate(body)
+        }
+        when compiler.fate_mode == false {
+            compile.loop(body)
+        }
+        return
+    }
+    
+    # keep
+    when compiler.match("keep") {
+        compiler.pos = compiler.pos + 4
+        compile.keep()
+        return
+    }
+    
+    # fate on/off
+    when compiler.match("fate on") {
+        compiler.pos = compiler.pos + 7
+        compiler.fate_mode = true
+        compile.fate_enable()
+        return
+    }
+    when compiler.match("fate off") {
+        compiler.pos = compiler.pos + 8
+        compiler.fate_mode = false
+        compile.fate_disable()
+        return
+    }
+    
+    # limit N
+    when compiler.match("limit ") {
+        compiler.pos = compiler.pos + 6
+        n = compiler.parse_number()
+        compile.limit(n)
+        return
+    }
+    
+    # syscall.exit(N)
+    when compiler.match("syscall.exit(") {
+        compiler.pos = compiler.pos + 13
+        code = compiler.parse_number()
+        compiler.pos = compiler.pos + 1
+        compile.exit(code)
+        return
+    }
+    
+    # db name
+    when compiler.match("db ") {
+        compiler.pos = compiler.pos + 3
+        compiler.skip_whitespace()
+        name = compiler.parse_ident()
+        compile.db_create(name)
+        return
+    }
+    
+    # gui tile/stem
+    when compiler.match("gui ") {
+        compiler.pos = compiler.pos + 4
+        mode = compiler.parse_ident()
+        gui.set_mode(mode)
+        return
+    }
+    
+    # layout auto/small/medium/large/fullhd
+    when compiler.match("layout ") {
+        compiler.pos = compiler.pos + 7
+        preset = compiler.parse_ident()
+        when preset == "auto" { layout.auto() }
+        when preset == "small" { layout.small() }
+        when preset == "medium" { layout.medium() }
+        when preset == "large" { layout.large() }
+        when preset == "fullhd" { layout.fullhd() }
+        return
+    }
+    
+    # layout.set w h
+    when compiler.match("layout.set ") {
+        compiler.pos = compiler.pos + 11
+        w = compiler.parse_number()
+        compiler.skip_whitespace()
+        h = compiler.parse_number()
+        layout.set(w, h)
+        return
+    }
+    
+    # window "title" w h
+    when compiler.match("window ") {
+        compiler.pos = compiler.pos + 7
+        compiler.skip_whitespace()
+        title = compiler.parse_string()
+        compiler.skip_whitespace()
+        w = compiler.parse_number()
+        compiler.skip_whitespace()
+        h = compiler.parse_number()
+        window.create(title, w, h)
+        return
+    }
+    
+    # style name { ... }
+    when compiler.match("style ") {
+        compiler.pos = compiler.pos + 6
+        name = compiler.parse_ident()
+        compiler.skip_whitespace()
+        props = compiler.parse_block()
+        style.define(name, props)
+        return
+    }
+    
+    # apply name
+    when compiler.match("apply ") {
+        compiler.pos = compiler.pos + 6
+        name = compiler.parse_ident()
+        style.apply(name)
+        return
+    }
+    
+    # box x y w h
+    when compiler.match("box ") {
+        compiler.pos = compiler.pos + 4
+        x = compiler.parse_number()
+        compiler.skip_whitespace()
+        y = compiler.parse_number()
+        compiler.skip_whitespace()
+        w = compiler.parse_number()
+        compiler.skip_whitespace()
+        h = compiler.parse_number()
+        styled.box(x, y, w, h)
+        return
+    }
+    
+    # text x y "content"
+    when compiler.match("text ") {
+        compiler.pos = compiler.pos + 5
+        x = compiler.parse_number()
+        compiler.skip_whitespace()
+        y = compiler.parse_number()
+        compiler.skip_whitespace()
+        content = compiler.parse_string()
+        styled.text(x, y, content)
+        return
+    }
+    
+    # draw.a_rect rx ry rw rh color (代数化: 0.0-1.0)
+    when compiler.match("draw.a_rect ") {
+        compiler.pos = compiler.pos + 12
+        rx = compiler.parse_number()
+        compiler.skip_whitespace()
+        ry = compiler.parse_number()
+        compiler.skip_whitespace()
+        rw = compiler.parse_number()
+        compiler.skip_whitespace()
+        rh = compiler.parse_number()
+        compiler.skip_whitespace()
+        color = compiler.parse_number()
+        draw.a_rect(rx, ry, rw, rh, color)
+        return
+    }
+    
+    # draw.rect x y w h color (像素)
+    when compiler.match("draw.rect ") {
+        compiler.pos = compiler.pos + 10
+        x = compiler.parse_number()
+        compiler.skip_whitespace()
+        y = compiler.parse_number()
+        compiler.skip_whitespace()
+        w = compiler.parse_number()
+        compiler.skip_whitespace()
+        h = compiler.parse_number()
+        compiler.skip_whitespace()
+        color = compiler.parse_number()
+        shape.add_rect(x, y, w, h, color)
+        return
+    }
+    
+    # draw.a_circle rx ry rr color (代数化)
+    when compiler.match("draw.a_circle ") {
+        compiler.pos = compiler.pos + 14
+        rx = compiler.parse_number()
+        compiler.skip_whitespace()
+        ry = compiler.parse_number()
+        compiler.skip_whitespace()
+        rr = compiler.parse_number()
+        compiler.skip_whitespace()
+        color = compiler.parse_number()
+        draw.a_circle(rx, ry, rr, color)
+        return
+    }
+    
+    # draw.circle x y r color (像素)
+    when compiler.match("draw.circle ") {
+        compiler.pos = compiler.pos + 12
+        x = compiler.parse_number()
+        compiler.skip_whitespace()
+        y = compiler.parse_number()
+        compiler.skip_whitespace()
+        r = compiler.parse_number()
+        compiler.skip_whitespace()
+        color = compiler.parse_number()
+        shape.add_circle(x, y, r, color)
+        return
+    }
+    
+    # draw.a_text rx ry "text" color (代数化)
+    when compiler.match("draw.a_text ") {
+        compiler.pos = compiler.pos + 12
+        rx = compiler.parse_number()
+        compiler.skip_whitespace()
+        ry = compiler.parse_number()
+        compiler.skip_whitespace()
+        content = compiler.parse_string()
+        compiler.skip_whitespace()
+        color = compiler.parse_number()
+        draw.a_text(rx, ry, content, color)
+        return
+    }
+    
+    # draw.a_line rx1 ry1 rx2 ry2 color (代数化)
+    when compiler.match("draw.a_line ") {
+        compiler.pos = compiler.pos + 12
+        rx1 = compiler.parse_number()
+        compiler.skip_whitespace()
+        ry1 = compiler.parse_number()
+        compiler.skip_whitespace()
+        rx2 = compiler.parse_number()
+        compiler.skip_whitespace()
+        ry2 = compiler.parse_number()
+        compiler.skip_whitespace()
+        color = compiler.parse_number()
+        draw.a_line(rx1, ry1, rx2, ry2, color)
+        return
+    }
+    
+    # draw.text x y "text" color (像素)
+    when compiler.match("draw.text ") {
+        compiler.pos = compiler.pos + 10
+        x = compiler.parse_number()
+        compiler.skip_whitespace()
+        y = compiler.parse_number()
+        compiler.skip_whitespace()
+        content = compiler.parse_string()
+        compiler.skip_whitespace()
+        color = compiler.parse_number()
+        shape.add_text(x, y, content, color)
+        return
+    }
+    
+    # draw.render
+    when compiler.match("draw.render") {
+        compiler.pos = compiler.pos + 11
+        render()
+        return
+    }
+    
+    # draw.save "file"
+    when compiler.match("draw.save ") {
+        compiler.pos = compiler.pos + 10
+        filename = compiler.parse_string()
+        save(filename)
+        return
+    }
+    
+    # button id "text" x y w h color
+    when compiler.match("button ") {
+        compiler.pos = compiler.pos + 7
+        id = compiler.parse_ident()
+        compiler.skip_whitespace()
+        text = compiler.parse_string()
+        compiler.skip_whitespace()
+        x = compiler.parse_number()
+        compiler.skip_whitespace()
+        y = compiler.parse_number()
+        compiler.skip_whitespace()
+        w = compiler.parse_number()
+        compiler.skip_whitespace()
+        h = compiler.parse_number()
+        compiler.skip_whitespace()
+        color = compiler.parse_number()
+        component.button(id, x, y, w, h, text)
+        return
+    }
+    
+    # on.click id { body }
+    when compiler.match("on.click ") {
+        compiler.pos = compiler.pos + 9
+        id = compiler.parse_ident()
+        compiler.skip_whitespace()
+        body = compiler.parse_block()
+        event.bind(id, event_type.click, body)
+        return
+    }
+    
+    # on.close { body }
+    when compiler.match("on.close ") {
+        compiler.pos = compiler.pos + 9
+        body = compiler.parse_block()
+        event.bind("*", event_type.close, body)
+        return
+    }
+    
+    # 标识符开头 — 赋值/Pipeline/调用
+    when compiler.is_ident_start() {
+        name = compiler.parse_ident()
+        compiler.skip_whitespace()
+        
+        # name -> value (Pipeline 赋值)
+        when compiler.match("->") {
+            compiler.pos = compiler.pos + 2
+            compiler.skip_whitespace()
+            
+            # name -> function() { } (函数定义)
+            when compiler.match("function(") {
+                compiler.pos = compiler.pos + 9
+                compiler.skip_whitespace()
+                compiler.pos = compiler.pos + 1  # ')'
+                compiler.skip_whitespace()
+                body = compiler.parse_block()
+                compile.fn(name, body)
+                return
+            }
+            
+            # name -> { } (对象)
+            when compiler.char() == 123 {
+                obj = compiler.parse_object()
+                compile.assign(name, obj)
+                return
+            }
+            
+            # name -> [ ] (数组)
+            when compiler.char() == 91 {
+                arr = compiler.parse_array()
+                compile.assign(name, arr)
+                return
+            }
+            
+            # name -> expr (简单赋值或 Pipeline)
+            value = compiler.parse_pipeline()
+            compile.assign(name, value)
+            return
+        }
+        
+        # name = value (直接赋值)
+        when compiler.char() == 61 {
+            compiler.pos = compiler.pos + 1
+            compiler.skip_whitespace()
+            value = compiler.parse_expr()
+            compile.assign(name, value)
+            return
+        }
+        
+        # name() (函数调用)
+        when compiler.char() == 40 {
+            compiler.pos = compiler.pos + 1
+            args = compiler.parse_args()
+            compiler.pos = compiler.pos + 1  # ')'
+            compile.call(name, args)
+            return
+        }
+        
+        # name (单独标识符 — Pipeline 起点)
+        when compiler.match("->") == false {
+            # 可能是 Pipeline 或表达式
+            return
+        }
+    }
+    
+    # 字符串字面量 — Pipeline 起点
+    when compiler.char() == 34 {
+        str = compiler.parse_string()
+        compiler.skip_whitespace()
+        when compiler.match("->") {
+            compiler.pos = compiler.pos + 2
+            compiler.skip_whitespace()
+            target = compiler.parse_pipeline()
+            compile.pipeline(str, target)
+            return
+        }
+        return
+    }
+    
+    # { } 对象字面量
+    when compiler.char() == 123 {
+        obj = compiler.parse_object()
+        compiler.skip_whitespace()
+        when compiler.match("->") {
+            compiler.pos = compiler.pos + 2
+            compiler.skip_whitespace()
+            target = compiler.parse_pipeline()
+            compile.pipeline(obj, target)
+            return
+        }
+        return
+    }
+    
+    # [ ] 数组字面量
+    when compiler.char() == 91 {
+        arr = compiler.parse_array()
+        compiler.skip_whitespace()
+        when compiler.match("->") {
+            compiler.pos = compiler.pos + 2
+            compiler.skip_whitespace()
+            target = compiler.parse_pipeline()
+            compile.pipeline(arr, target)
+            return
+        }
+        return
+    }
+    
+    # 跳过未知字符
+    compiler.pos = compiler.pos + 1
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Pipeline 解析 — a -> b -> c
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_pipeline {
+    first = compiler.parse_expr()
+    compiler.skip_whitespace()
+    
+    # 链式 Pipeline
+    when compiler.match("->") {
+        compiler.pos = compiler.pos + 2
+        compiler.skip_whitespace()
+        rest = compiler.parse_pipeline()
+        -> { type: "pipeline", from: first, to: rest }
+    }
+    
+    -> first
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 对象解析 — { key: value, ... }
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_object {
+    compiler.pos = compiler.pos + 1  # '{'
+    obj = {}
+    
+    loop {
+        compiler.skip_whitespace()
+        when compiler.char() == 125 { break }  # '}'
+        
+        key = compiler.parse_ident()
+        compiler.skip_whitespace()
+        compiler.pos = compiler.pos + 1  # ':'
+        compiler.skip_whitespace()
+        value = compiler.parse_expr()
+        obj[key] = value
+        
+        compiler.skip_whitespace()
+        when compiler.char() == 44 {  # ','
+            compiler.pos = compiler.pos + 1
+        }
+    }
+    
+    compiler.pos = compiler.pos + 1  # '}'
+    -> obj
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 数组解析 — [ item, ... ]
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_array {
+    compiler.pos = compiler.pos + 1  # '['
+    arr = []
+    
+    loop {
+        compiler.skip_whitespace()
+        when compiler.char() == 93 { break }  # ']'
+        
+        item = compiler.parse_expr()
+        arr <- item
+        
+        compiler.skip_whitespace()
+        when compiler.char() == 44 {  # ','
+            compiler.pos = compiler.pos + 1
+        }
+    }
+    
+    compiler.pos = compiler.pos + 1  # ']'
+    -> arr
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 参数解析
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.parse_args {
+    args = []
+    
+    loop {
+        compiler.skip_whitespace()
+        when compiler.char() == 41 { break }  # ')'
+        
+        arg = compiler.parse_expr()
+        args <- arg
+        
+        compiler.skip_whitespace()
+        when compiler.char() == 44 {  # ','
+            compiler.pos = compiler.pos + 1
+        }
+    }
+    
+    -> args
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 基础解析
+# ═══════════════════════════════════════════════════════════════
+
+fn compiler.char {
+    when compiler.pos < compiler.len {
+        -> compiler.source[compiler.pos]
+    }
+    -> 0
+}
+
+fn compiler.match expected {
+    i = 0
+    elen = expected.length
+    loop {
+        when i >= elen { -> true }
+        idx = compiler.pos + i
+        when idx >= compiler.len { -> false }
+        when compiler.source[idx] != expected[i] { -> false }
+        i = i + 1
+    }
+}
+
+fn compiler.skip_whitespace {
+    loop {
+        when compiler.pos >= compiler.len { break }
+        c = compiler.char()
+        when c == 32 { compiler.pos = compiler.pos + 1 }
+        when c == 9 { compiler.pos = compiler.pos + 1 }
+        when c == 10 { compiler.pos = compiler.pos + 1 }
+        when c == 13 { compiler.pos = compiler.pos + 1 }
+        when c != 32 {
+            when c != 9 {
+                when c != 10 {
+                    when c != 13 { break }
+                }
+            }
+        }
+    }
+}
+
+fn compiler.skip_line {
+    loop {
+        when compiler.pos >= compiler.len { break }
+        c = compiler.char()
+        compiler.pos = compiler.pos + 1
+        when c == 10 { break }
+    }
+}
+
+fn compiler.parse_string {
+    when compiler.char() == 34 {
+        compiler.pos = compiler.pos + 1
+    }
+    start = compiler.pos
+    loop {
+        when compiler.pos >= compiler.len { break }
+        c = compiler.char()
+        when c == 34 { break }
+        when c == 92 {
+            compiler.pos = compiler.pos + 2
+        }
+        when c != 92 {
+            compiler.pos = compiler.pos + 1
+        }
+    }
+    end = compiler.pos
+    when compiler.char() == 34 {
+        compiler.pos = compiler.pos + 1
+    }
+    -> compiler.source.substring(start, end)
+}
+
+fn compiler.parse_number {
+    num = 0
+    loop {
+        when compiler.pos >= compiler.len { break }
+        c = compiler.char()
+        when c >= 48 {
+            when c <= 57 {
+                digit = c - 48
+                num = num * 10 + digit
+                compiler.pos = compiler.pos + 1
+            }
+            when c > 57 { break }
+        }
+        when c < 48 { break }
+    }
+    -> num
+}
+
+fn compiler.is_ident_start {
+    c = compiler.char()
+    when c >= 97 { when c <= 122 { -> true } }
+    when c >= 65 { when c <= 90 { -> true } }
+    when c == 95 { -> true }
+    -> false
+}
+
+fn compiler.is_ident_char {
+    c = compiler.char()
+    when c >= 97 { when c <= 122 { -> true } }
+    when c >= 65 { when c <= 90 { -> true } }
+    when c >= 48 { when c <= 57 { -> true } }
+    when c == 95 { -> true }
+    when c == 46 { -> true }
+    -> false
+}
+
+fn compiler.parse_ident {
+    start = compiler.pos
+    loop {
+        when compiler.pos >= compiler.len { break }
+        when compiler.is_ident_char() == false { break }
+        compiler.pos = compiler.pos + 1
+    }
+    -> compiler.source.substring(start, compiler.pos)
+}
+
+fn compiler.parse_block {
+    compiler.skip_whitespace()
+    when compiler.char() == 123 {
+        compiler.pos = compiler.pos + 1
+    }
+    start = compiler.pos
+    depth = 1
+    loop {
+        when compiler.pos >= compiler.len { break }
+        when depth == 0 { break }
+        c = compiler.char()
+        when c == 123 { depth = depth + 1 }
+        when c == 125 { depth = depth - 1 }
+        compiler.pos = compiler.pos + 1
+    }
+    -> compiler.source.substring(start, compiler.pos - 1)
+}
+
+fn compiler.parse_expr {
+    compiler.skip_whitespace()
+    c = compiler.char()
+    
+    # 数字
+    when c >= 48 {
+        when c <= 57 {
+            -> compiler.parse_number()
+        }
+    }
+    
+    # 标识符
+    when compiler.is_ident_start() {
+        -> compiler.parse_ident()
+    }
+    
+    # 字符串
+    when c == 34 {
+        -> compiler.parse_string()
+    }
+    
+    # 对象
+    when c == 123 {
+        -> compiler.parse_object()
+    }
+    
+    # 数组
+    when c == 91 {
+        -> compiler.parse_array()
+    }
+    
+    -> 0
+}

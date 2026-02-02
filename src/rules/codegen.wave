@@ -1,0 +1,334 @@
+# 🌊 Wave 代码生成
+# 无预设，由 Fate/平台提供
+
+use rules/fate
+use platform/kernel
+
+# ═══════════════════════════════════════════════════════════════
+# 寄存器 — 代数编号
+# ═══════════════════════════════════════════════════════════════
+
+reg {
+    a: 0    # 累加器
+    c: 1    # 计数器
+    d: 2    # 数据
+    b: 3    # 基址
+    sp: 4   # 栈指针
+    bp: 5   # 基址指针
+    si: 6   # 源索引
+    di: 7   # 目标索引
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 编译前导/后缀 — 平台由 env 提供
+# ═══════════════════════════════════════════════════════════════
+
+fn codegen.prologue {
+    # 输出平台头部（ELF/Mach-O/PE/WAVE）
+    platform.emit_header()
+    
+    # 栈帧设置
+    gen.push(reg.bp)
+    gen.mov_r_r(reg.bp, reg.sp)
+    gen.sub_r_imm8(reg.sp, 0x20)
+}
+
+fn codegen.exit code {
+    # 系统调用 exit
+    gen.mov_r64_imm(reg.a, platform.syscall_base + 60)  # exit syscall
+    gen.mov_r64_imm(reg.di, code)
+    gen.syscall()
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 指令生成 — 平台无关
+# ═══════════════════════════════════════════════════════════════
+
+fn gen.push r {
+    emit 0x50 + r
+}
+
+fn gen.pop r {
+    emit 0x58 + r
+}
+
+fn gen.mov_r64_imm r imm {
+    emit 0x48
+    emit 0xb8 + r
+    emit imm  # 8 bytes
+}
+
+fn gen.mov_r_r dst src {
+    emit 0x48
+    emit 0x89
+    emit 0xc0 + src * 8 + dst
+}
+
+fn gen.sub_r_imm8 r imm8 {
+    emit 0x48
+    emit 0x83
+    emit 0xe8 + r
+    emit imm8
+}
+
+fn gen.syscall {
+    emit 0x0f
+    emit 0x05
+}
+
+fn gen.ret {
+    emit 0xc3
+}
+
+fn gen.jmp offset {
+    emit 0xe9
+    emit offset
+}
+
+fn gen.jz offset {
+    emit 0x0f
+    emit 0x84
+    emit offset
+}
+
+fn gen.jnz offset {
+    emit 0x0f
+    emit 0x85
+    emit offset
+}
+
+fn gen.call offset {
+    emit 0xe8
+    emit offset
+}
+
+fn gen.test r1 r2 {
+    emit 0x48
+    emit 0x85
+    emit 0xc0 + r1 * 8 + r2
+}
+
+fn gen.pause {
+    emit 0xf3
+    emit 0x90
+}
+
+fn gen.rdtsc {
+    emit 0x0f
+    emit 0x31
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 规则映射 — 机器码
+# ═══════════════════════════════════════════════════════════════
+
+fn codegen.prologue {
+    gen.push(reg.bp)
+    gen.mov_r_r(reg.bp, reg.sp)
+    gen.sub_r_imm8(reg.sp, 64)
+}
+
+fn codegen.epilogue {
+    gen.mov_r_r(reg.sp, reg.bp)
+    gen.pop(reg.bp)
+    gen.ret()
+}
+
+# 输出 — 通过平台 syscall
+fn codegen.write addr len {
+    platform.syscall(1, 1, addr, len)  # write(1, addr, len)
+}
+
+# 退出 — 通过平台 syscall
+fn codegen.exit code {
+    platform.syscall(60, code, 0, 0)   # exit(code)
+}
+
+fn codegen.infinite_loop {
+    emit 0xe9
+    emit 0xfb
+    emit 0xff
+    emit 0xff
+    emit 0xff
+}
+
+fn codegen.event_loop {
+    gen.pause()
+    emit 0xeb
+    emit 0xfc
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 意图编译
+# ═══════════════════════════════════════════════════════════════
+
+fn compile.out text {
+    addr = data.add_string(text)
+    len = text.length + 1
+    codegen.write(addr, len)
+}
+
+fn compile.emit bytes {
+    emit bytes
+}
+
+fn compile.fn name body {
+    label.add(name)
+    codegen.prologue()
+    compile(body)
+    codegen.epilogue()
+}
+
+fn compile.loop body {
+    start = label.current()
+    compile(body)
+    gen.jmp(start - label.current() - 5)
+}
+
+fn compile.keep {
+    codegen.event_loop()
+}
+
+fn compile.exit code {
+    codegen.exit(code)
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 完整语法编译
+# ═══════════════════════════════════════════════════════════════
+
+fn compile.when cond body {
+    # 条件跳转
+    codegen.check_condition(cond)
+    compile(body)
+}
+
+fn compile.otherwise body {
+    # else 分支
+    compile(body)
+}
+
+fn compile.assign name value {
+    # 变量赋值
+    addr = data.add_variable(name)
+    codegen.store(addr, value)
+}
+
+fn compile.call name args {
+    # 函数调用
+    addr = label.get(name)
+    gen.call(addr)
+}
+
+fn compile.pipeline from to {
+    # Pipeline: from -> to
+    # Fate 管理执行
+    result = from
+    when to.type == "pipeline" {
+        result = compile.pipeline(result, to.from)
+        result = compile.pipeline(result, to.to)
+    }
+    when to.type != "pipeline" {
+        # 调用 to(result)
+        compile.call(to, [result])
+    }
+    -> result
+}
+
+fn compile.limit n {
+    gen.mov_r64_imm(reg.a, n)
+    fate.set_limit(n)
+}
+
+fn compile.fate_enable {
+    gen.mov_r64_imm(reg.a, 1)
+    fate.enable()
+}
+
+fn compile.fate_disable {
+    gen.mov_r64_imm(reg.a, 0)
+    fate.disable()
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 数据库编译 — Fate 自动适配
+# ═══════════════════════════════════════════════════════════════
+
+fn compile.db_create name {
+    # 调用 db.create_named(name, "auto")
+    # 生成调用代码
+    db.create_named(name, "auto")
+}
+
+fn compile.db_put c k v {
+    db.put(c, k, v)
+}
+
+fn compile.db_get c k {
+    -> db.get(c, k)
+}
+
+fn compile.db_bench n {
+    db.bench(n)
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Fate 钩子 — 动态模式时插入
+# ═══════════════════════════════════════════════════════════════
+
+fn codegen.check_fate {
+    # 从 Fate 状态地址读取
+    fate_addr = fate.recall("addr:state")
+    emit 0x48
+    emit 0xa1
+    emit fate_addr
+    gen.test(reg.a, reg.a)
+}
+
+fn codegen.measure_begin {
+    gen.rdtsc()
+    time_addr = fate.recall("addr:time")
+    emit 0x48
+    emit 0xa3
+    emit time_addr
+}
+
+fn codegen.measure_end {
+    gen.rdtsc()
+    time_addr = fate.recall("addr:time")
+    emit 0x48
+    emit 0x2b
+    emit 0x04
+    emit 0x25
+    emit time_addr
+}
+
+fn codegen.loop_with_fate body {
+    start = label.current()
+    
+    codegen.check_fate()
+    gen.jz(8)  # 跳过测量
+    
+    codegen.measure_begin()
+    
+    compile(body)
+    
+    codegen.check_fate()
+    gen.jz(8)  # 跳过检查
+    
+    codegen.measure_end()
+    
+    gen.jmp(start - label.current() - 5)
+}
+
+fn codegen.call_with_fate addr {
+    codegen.check_fate()
+    gen.jz(16)
+    
+    codegen.measure_begin()
+    gen.call(addr)
+    codegen.measure_end()
+    gen.jmp(8)
+    
+    gen.call(addr)
+}

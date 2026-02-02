@@ -1,0 +1,135 @@
+# 🌊 Wave 样式系统
+# CSS-like 样式：规则驱动的属性管理
+
+# ═══════════════════════════════════════════════════════════════
+# 样式定义 (记忆规律：持久属性)
+# ═══════════════════════════════════════════════════════════════
+
+style_def {
+    name: ""
+    fill: 0xFFFFFF
+    stroke: 0x000000
+    stroke_width: 1
+    opacity: 100
+    radius: 0
+    font_size: 16
+    padding: 0
+    margin: 0
+    align: 0          # 0=left, 1=center, 2=right
+    display: 0        # 0=block, 1=inline, 2=flex, 3=grid
+}
+
+# 样式注册表
+styles: []
+
+# 当前样式
+current_style: {
+    fill: 0xFFFFFF
+    stroke: 0x000000
+    stroke_width: 1
+    opacity: 100
+    radius: 0
+    font_size: 16
+    padding: 0
+    margin: 0
+    align: 0
+    display: 0
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 样式操作 (连接规律：样式与元素连接)
+# ═══════════════════════════════════════════════════════════════
+
+fn style.define name properties {
+    new_style = {
+        name: name
+        fill: properties.fill
+        stroke: properties.stroke
+        stroke_width: properties.stroke_width
+        opacity: properties.opacity
+        radius: properties.radius
+        font_size: properties.font_size
+        padding: properties.padding
+        margin: properties.margin
+        align: properties.align
+        display: properties.display
+    }
+    styles <- new_style
+}
+
+fn style.find name {
+    styles -> each s {
+        when s.name == name {
+            -> s
+        }
+    }
+    -> null
+}
+
+fn style.apply name {
+    s = style.find(name)
+    when s != null {
+        current_style = s
+    }
+}
+
+fn style.reset {
+    current_style = {
+        fill: 0xFFFFFF
+        stroke: 0x000000
+        stroke_width: 1
+        opacity: 100
+        radius: 0
+        font_size: 16
+        padding: 0
+        margin: 0
+        align: 0
+        display: 0
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 带样式的绘图 (组合规律：样式 + 形状)
+# ═══════════════════════════════════════════════════════════════
+
+fn styled.box x y w h {
+    # 应用当前样式绘制矩形
+    shape.add_rect(x, y, w, h, current_style.fill)
+    
+    # 如果有边框
+    when current_style.stroke_width > 0 {
+        # 上边
+        shape.add_line(x, y, x + w, y, current_style.stroke)
+        # 下边
+        shape.add_line(x, y + h, x + w, y + h, current_style.stroke)
+        # 左边
+        shape.add_line(x, y, x, y + h, current_style.stroke)
+        # 右边
+        shape.add_line(x + w, y, x + w, y + h, current_style.stroke)
+    }
+}
+
+fn styled.text x y content {
+    # 应用当前样式绘制文本
+    shape.add_text(x, y, content, current_style.fill)
+}
+
+# ═══════════════════════════════════════════════════════════════
+# style 语法支持
+# ═══════════════════════════════════════════════════════════════
+
+intent style {
+    action: style.define
+}
+
+intent apply {
+    action: style.apply
+}
+
+intent box {
+    action: styled.box
+}
+
+intent text {
+    action: styled.text
+}

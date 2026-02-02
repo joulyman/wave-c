@@ -1,0 +1,110 @@
+# 🌊 Wave 跨平台内核
+# 无预设，Fate 探测，代数编号
+
+use rules/fate
+
+# ═══════════════════════════════════════════════════════════════
+# 平台状态 — 代数形式
+# ═══════════════════════════════════════════════════════════════
+
+platform {
+    id: 0              # 平台编号（Fate 分配）
+    syscall_base: 0    # syscall 基址
+    header_size: 0     # 头部大小
+    entry_offset: 0    # 入口偏移
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 注册到 Fate
+# ═══════════════════════════════════════════════════════════════
+
+fn platform.register {
+    fate.register_adapter("platform", platform.adapt)
+}
+
+fn platform.adapt {
+    # Fate 探测平台特征
+    platform.probe()
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 探测 — Fate 自动学习
+# ═══════════════════════════════════════════════════════════════
+
+fn platform.probe {
+    # 尝试 syscall，根据返回特征分配编号
+    # Fate 会记录成功的模式
+    
+    # 探测 1: syscall 0x3c (60)
+    result = platform.try_syscall(0x3c, 0, 0, 0)
+    when result.success {
+        platform.id = 1
+        platform.syscall_base = 0
+        -> 
+    }
+    
+    # 探测 2: syscall 0x2000001
+    result = platform.try_syscall(0x2000001, 0, 0, 0)
+    when result.success {
+        platform.id = 2
+        platform.syscall_base = 0x2000000
+        ->
+    }
+    
+    # 未知：分配新编号
+    platform.id = fate.next_id()
+    platform.syscall_base = 0
+}
+
+fn platform.try_syscall num a b c {
+    # 由 codegen 生成实际测试代码
+    # 返回 { success: bool }
+    -> { success: false }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 输出 — 根据 Fate 学习的模式
+# ═══════════════════════════════════════════════════════════════
+
+fn platform.emit_header {
+    # 根据平台 ID 输出对应格式
+    when platform.id == 1 {
+        # Linux: ELF64
+        emit 0x7f 0x45 0x4c 0x46  # .ELF
+        emit 0x02 0x01 0x01 0x00  # 64-bit, LE, v1, SYSV
+        emit 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+        emit 0x02 0x00 0x3e 0x00  # EXEC, x86_64
+        emit 0x01 0x00 0x00 0x00  # version
+        emit 0x78 0x00 0x40 0x00 0x00 0x00 0x00 0x00  # entry
+        emit 0x40 0x00 0x00 0x00 0x00 0x00 0x00 0x00  # phoff
+        emit 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00  # shoff
+        emit 0x00 0x00 0x00 0x00 0x40 0x00 0x38 0x00
+        emit 0x01 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+        # Program header
+        emit 0x01 0x00 0x00 0x00 0x05 0x00 0x00 0x00  # LOAD, R+X
+        emit 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00  # offset
+        emit 0x00 0x00 0x40 0x00 0x00 0x00 0x00 0x00  # vaddr
+        emit 0x00 0x00 0x40 0x00 0x00 0x00 0x00 0x00  # paddr
+        emit 0x00 0x02 0x00 0x00 0x00 0x00 0x00 0x00  # filesz
+        emit 0x00 0x02 0x00 0x00 0x00 0x00 0x00 0x00  # memsz
+        emit 0x00 0x10 0x00 0x00 0x00 0x00 0x00 0x00  # align
+        ->
+    }
+    when platform.id == 2 {
+        # macOS: Mach-O
+        emit 0xcf 0xfa 0xed 0xfe  # MH_MAGIC_64
+        emit 0x07 0x00 0x00 0x01  # x86_64
+        emit 0x03 0x00 0x00 0x00  # CPU subtype
+        emit 0x02 0x00 0x00 0x00  # MH_EXECUTE
+        ->
+    }
+    # 未知平台：WAVE 原生
+    emit 0x57 0x41 0x56 0x45  # WAVE
+    emit platform.id
+}
+
+fn platform.syscall num a b c {
+    # 加上平台 syscall 基址
+    real_num = platform.syscall_base + num
+    codegen.gen_syscall(real_num, a, b, c)
+}

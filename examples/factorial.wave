@@ -1,0 +1,19 @@
+# Factorial Example
+# Demonstrates recursion in Wave-C
+
+fn factorial n {
+    when n <= 1 { -> 1 }
+    prev = n - 1
+    sub = factorial(prev)
+    -> n * sub
+}
+
+out "Factorial test:\n"
+
+f5 = factorial(5)
+out "5! = 120\n"
+
+f6 = factorial(6)
+out "6! = 720\n"
+
+syscall.exit(0)

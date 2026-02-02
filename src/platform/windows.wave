@@ -1,0 +1,22 @@
+# 🪟 Windows 最小桥接
+
+fn windows.emit_header {
+    # PE 头
+    emit "MZ"                # DOS magic
+    emit "\x90\x00"          # DOS stub padding
+    emit "\x03\x00\x00\x00"
+    emit "\x04\x00\x00\x00"
+    emit "\xff\xff\x00\x00"
+    # ... 简化 DOS header
+    
+    # PE signature at 0x3C
+    emit "PE\x00\x00"
+    emit "\x64\x86"          # x86_64
+}
+
+fn windows.exit code {
+    # Windows: call ExitProcess
+    # 需要 kernel32.dll
+    emit "\x48\x31\xc9"      # xor rcx, rcx (exit code 0)
+    # call [ExitProcess]
+}

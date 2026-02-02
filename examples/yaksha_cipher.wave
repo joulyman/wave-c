@@ -1,0 +1,211 @@
+# 🔐 Yaksha Cipher - Wave Implementation
+# Core encryption algorithm for x86-64 native code
+# Compiles to pure assembly via Wave
+
+use rules/codegen
+
+# ═══════════════════════════════════════════════════════════════
+# Constants
+# ═══════════════════════════════════════════════════════════════
+
+const DIMENSION = 2.20
+const DIM_INT = 2
+const DIM_FRAC = 51    # 0.20 * 256 ≈ 51
+
+# ═══════════════════════════════════════════════════════════════
+# Core Encryption - Single Byte Transform
+# ═══════════════════════════════════════════════════════════════
+
+fn yaksha.transform_byte byte pos key_byte {
+    # Derive position key
+    pk = (key_byte + pos) ^ (pos * 7)
+    pk = pk & 0xFF
+    
+    # Compute entropy (pseudo-random based on position)
+    entropy = ((pos * 31337) ^ key_byte) & 0xFF
+    
+    # Rotation amount from dimension
+    rot = (DIM_INT + (DIM_FRAC >> 6)) & 7
+    
+    # Transform based on entropy
+    when entropy > 127 {
+        # High entropy: multiply + rotate left
+        pk_odd = pk | 1
+        result = (byte * pk_odd) & 0xFF
+        result = ((result << rot) | (result >> (8 - rot))) & 0xFF
+    }
+    otherwise {
+        # Low entropy: add + rotate right
+        result = (byte + pk) & 0xFF
+        result = ((result >> rot) | (result << (8 - rot))) & 0xFF
+    }
+    
+    # XOR mixing
+    result = result ^ key_byte
+    -> result
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Cascade XOR - Sequential diffusion
+# ═══════════════════════════════════════════════════════════════
+
+fn yaksha.cascade data len key {
+    cascade = key[0] ^ key[1] ^ key[2] ^ key[3]
+    
+    i = 0
+    loop {
+        when i >= len { break }
+        
+        data[i] = data[i] ^ cascade
+        cascade = ((cascade << 1) | (cascade >> 7)) ^ data[i]
+        
+        i = i + 1
+    }
+    -> data
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Full Encryption
+# ═══════════════════════════════════════════════════════════════
+
+fn yaksha.encrypt plaintext len key key_len {
+    # Phase 1: Parallel transform (sequential in this version)
+    output = alloc(len)
+    
+    i = 0
+    loop {
+        when i >= len { break }
+        
+        key_idx = i % key_len
+        output[i] = yaksha.transform_byte(plaintext[i], i, key[key_idx])
+        
+        i = i + 1
+    }
+    
+    # Phase 2: Cascade XOR
+    output = yaksha.cascade(output, len, key)
+    
+    -> output
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Decryption (reverse operations)
+# ═══════════════════════════════════════════════════════════════
+
+fn yaksha.reverse_cascade data len key {
+    # First pass: collect cascade values
+    cascade = key[0] ^ key[1] ^ key[2] ^ key[3]
+    cascades = alloc(len)
+    
+    i = 0
+    loop {
+        when i >= len { break }
+        cascades[i] = cascade
+        temp = data[i] ^ cascade
+        cascade = ((cascade << 1) | (cascade >> 7)) ^ data[i]
+        i = i + 1
+    }
+    
+    # Second pass: reverse XOR
+    i = 0
+    loop {
+        when i >= len { break }
+        data[i] = data[i] ^ cascades[i]
+        i = i + 1
+    }
+    
+    -> data
+}
+
+fn yaksha.inverse_byte byte pos key_byte {
+    pk = (key_byte + pos) ^ (pos * 7)
+    pk = pk & 0xFF
+    entropy = ((pos * 31337) ^ key_byte) & 0xFF
+    rot = (DIM_INT + (DIM_FRAC >> 6)) & 7
+    
+    # Reverse XOR
+    result = byte ^ key_byte
+    
+    when entropy > 127 {
+        # Reverse: rotate right then divide
+        result = ((result >> rot) | (result << (8 - rot))) & 0xFF
+        pk_odd = pk | 1
+        # Modular inverse multiplication (precomputed table needed)
+        result = yaksha.mod_inv_mul(result, pk_odd)
+    }
+    otherwise {
+        # Reverse: rotate left then subtract
+        result = ((result << rot) | (result >> (8 - rot))) & 0xFF
+        result = (result - pk) & 0xFF
+    }
+    
+    -> result
+}
+
+fn yaksha.decrypt ciphertext len key key_len {
+    # Reverse Phase 2
+    data = yaksha.reverse_cascade(ciphertext, len, key)
+    
+    # Reverse Phase 1
+    output = alloc(len)
+    i = 0
+    loop {
+        when i >= len { break }
+        key_idx = i % key_len
+        output[i] = yaksha.inverse_byte(data[i], i, key[key_idx])
+        i = i + 1
+    }
+    
+    -> output
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Modular inverse (256 entry table for mod 256)
+# ═══════════════════════════════════════════════════════════════
+
+fn yaksha.mod_inv_mul val divisor {
+    # Extended Euclidean algorithm for mod 256
+    # Only odd numbers have inverses mod 256
+    inv = 1
+    d = divisor
+    
+    # Newton's method: inv = inv * (2 - d * inv) mod 256
+    # Converges in 8 iterations for 8-bit
+    iter = 0
+    loop {
+        when iter >= 8 { break }
+        inv = (inv * (2 - d * inv)) & 0xFF
+        iter = iter + 1
+    }
+    
+    -> (val * inv) & 0xFF
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Test
+# ═══════════════════════════════════════════════════════════════
+
+out "Yaksha Cipher (Wave Native)\n"
+out "===========================\n\n"
+
+# Test data
+test_data = "Hello, Yaksha!"
+key = "secret_key!"
+
+out "Plaintext:  "
+out test_data
+out "\n"
+
+# Encrypt
+encrypted = yaksha.encrypt(test_data, 14, key, 11)
+
+out "Encrypted:  [binary]\n"
+
+# Decrypt
+decrypted = yaksha.decrypt(encrypted, 14, key, 11)
+
+out "Decrypted:  "
+out decrypted
+out "\n"
+
+syscall.exit(0)

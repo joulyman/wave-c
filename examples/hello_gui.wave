@@ -1,0 +1,54 @@
+# 🌊 Wave GUI 示例 - 真实窗口程序
+#
+# 语法描述 GUI，编译成可运行窗口
+
+# === 窗口配置 ===
+window.title "Wave 5.0 Hello"
+window.size 500 350
+window.background 0xF5F5F5
+
+# === 标题栏 ===
+gradient.rect 0 0 500 40 0x3498DB 0x2980B9
+draw.text 15 12 "Wave Hello World" 0xFFFFFF 2
+
+# === 关闭按钮 ===
+draw.rect 460 5 30 30 0xE74C3C
+draw.text 468 12 "X" 0xFFFFFF 2
+
+# === 主面板 ===
+draw.rect 20 60 460 270 0xFFFFFF
+draw.border 20 60 460 270 0xDDDDDD 1
+
+# === 按钮组 ===
+button btn_hello "Hello" 40 90 130 45 0x2ECC71
+button btn_wave  "Wave"  190 90 130 45 0x3498DB
+button btn_gui   "GUI!"  340 90 130 45 0x9B59B6
+
+# === 圆形装饰 ===
+draw.circle 100 200 35 0xE74C3C
+draw.circle 250 200 35 0xF1C40F
+draw.circle 400 200 35 0x2ECC71
+
+# === 进度条 ===
+ui.progress 40 270 420 25 75 0x3498DB
+
+# === 底部文本 ===
+draw.text 40 310 "Wave GUI works!" 0x333333 2
+
+# === 事件绑定 ===
+on.click btn_hello {
+    out "Hello clicked!"
+}
+
+on.click btn_wave {
+    out "Wave clicked!"
+}
+
+on.close {
+    syscall.exit(0)
+}
+
+# === 渲染并显示 ===
+window.show
+
+syscall.exit(0)

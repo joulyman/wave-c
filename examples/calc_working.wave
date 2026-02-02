@@ -1,0 +1,73 @@
+# 🧮 Wave 计算器 - 工作版
+# 使用 loop 实现 keep（保持结构）
+
+gui tile
+
+window "Wave Calc" 320 480
+
+# 样式
+style bg { fill: 0x1C1C1E }
+style display { fill: 0x2C2C2E radius: 10 font_size: 48 align: right }
+style num { fill: 0x3A3A3C radius: 30 font_size: 24 align: center }
+style op { fill: 0xFF9500 radius: 30 font_size: 24 align: center }
+
+# UI
+apply bg
+box 0 0 320 480
+
+apply display
+box 10 10 300 80
+text 280 50 "0"
+
+apply num
+box 10 170 70 60
+text 38 195 "7"
+box 85 170 70 60
+text 113 195 "8"
+box 160 170 70 60
+text 188 195 "9"
+
+apply op
+box 235 170 70 60
+text 263 195 "x"
+
+apply num
+box 10 240 70 60
+text 38 265 "4"
+box 85 240 70 60
+text 113 265 "5"
+box 160 240 70 60
+text 188 265 "6"
+
+apply op
+box 235 240 70 60
+text 263 265 "-"
+
+apply num
+box 10 310 70 60
+text 38 335 "1"
+box 85 310 70 60
+text 113 335 "2"
+box 160 310 70 60
+text 188 335 "3"
+
+apply op
+box 235 310 70 60
+text 263 335 "+"
+
+apply num
+box 10 380 145 60
+text 75 405 "0"
+
+apply op
+box 235 380 70 60
+text 263 405 "="
+
+# 渲染
+draw.render
+draw.save "calc_working.ppm"
+
+out "Calculator ready"
+
+# 保持结构
+keep

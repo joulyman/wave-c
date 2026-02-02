@@ -1,0 +1,150 @@
+# 🌊 Wave 核心规则
+# 所有规则从统一场派生
+
+use rules/unified
+
+# ═══════════════════════════════════════════════════════════════
+# 派生规则 - 统一场的不同表达
+# ═══════════════════════════════════════════════════════════════
+
+# 引力规则
+gravitational = derive.gravitational()
+
+# 张力规则
+tension = derive.tension()
+
+# 熵规则
+entropy = derive.entropy()
+
+# 连接规则
+connection = derive.connection()
+
+# 记忆规则
+memory = derive.memory()
+
+# 轨道规则
+orbital = derive.orbital()
+
+# ═══════════════════════════════════════════════════════════════
+# 规则评估 - 计算规则在当前状态下的强度
+# ═══════════════════════════════════════════════════════════════
+
+fn rule.evaluate name context {
+    when name == "gravitational" {
+        -> gravitational.strength * context.mass
+    }
+    when name == "tension" {
+        -> tension.base + tension.accumulation * context.time
+    }
+    when name == "entropy" {
+        -> entropy.initial + entropy.growth * context.time
+    }
+    when name == "connection" {
+        -> connection.strength * context.count
+    }
+    when name == "memory" {
+        -> memory.persistence * context.age
+    }
+    when name == "orbital" {
+        -> orbital.stability * context.period
+    }
+    -> 0.0
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 规则应用 - 将规则效果施加到结构
+# ═══════════════════════════════════════════════════════════════
+
+fn rule.apply name structure intensity {
+    when name == "gravitational" {
+        # 吸引效果
+        structure.position = structure.position - intensity * structure.distance
+    }
+    when name == "tension" {
+        # 张力效果
+        structure.stress = structure.stress + intensity
+        when structure.stress > tension.release {
+            structure.stress = 0.0
+            # 触发释放
+        }
+    }
+    when name == "entropy" {
+        # 熵增效果
+        structure.disorder = structure.disorder + intensity
+    }
+    when name == "connection" {
+        # 连接效果
+        structure.links = structure.links + intensity
+    }
+    when name == "memory" {
+        # 记忆效果
+        structure.retention = structure.retention * (1.0 - memory.decay)
+    }
+    when name == "orbital" {
+        # 轨道效果
+        structure.phase = structure.phase + intensity / orbital.period
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 规则组合 - 多规则协同
+# ═══════════════════════════════════════════════════════════════
+
+# 组合不再是预定义的四元系统
+# 而是根据需要动态组合
+
+fn rules.combine names weights context {
+    total = 0.0
+    
+    i = 0
+    loop {
+        when i >= names.length { break }
+        name = names[i]
+        weight = weights[i]
+        value = rule.evaluate(name, context)
+        total = total + weight * value
+        i = i + 1
+    }
+    
+    -> total
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 常用组合 (替代四元系统)
+# ═══════════════════════════════════════════════════════════════
+
+# 高密度存储 (原 BlackHole 功能)
+fn combine.dense context {
+    -> rules.combine(
+        ["gravitational", "memory"],
+        [0.7, 0.3],
+        context
+    )
+}
+
+# 模式识别 (原 MeshBrain 功能)
+fn combine.pattern context {
+    -> rules.combine(
+        ["connection", "memory", "entropy"],
+        [0.5, 0.3, 0.2],
+        context
+    )
+}
+
+# 大规模并行 (原 MultiNova 功能)
+fn combine.parallel context {
+    -> rules.combine(
+        ["orbital", "tension"],
+        [0.6, 0.4],
+        context
+    )
+}
+
+# 快速碎片 (原 BaseForce 功能)
+fn combine.fast context {
+    -> rules.combine(
+        ["tension", "entropy"],
+        [0.5, 0.5],
+        context
+    )
+}

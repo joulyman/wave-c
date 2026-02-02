@@ -1,0 +1,317 @@
+# 🌊 Wave 图形系统
+# 矢量到像素：规则驱动的图形渲染
+
+# ═══════════════════════════════════════════════════════════════
+# 帧缓冲区 (boundary 规律：代数化边界)
+# ═══════════════════════════════════════════════════════════════
+
+framebuffer {
+    # 代数化：由 fate 动态决定
+    width: fate.display.w
+    height: fate.display.h
+    base: tile.graphics.base
+    stride: fate.display.w * 4
+    
+    # 比例系数 (0.0 - 1.0)
+    scale: 1.0
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 代数化布局 (比例驱动)
+# ═══════════════════════════════════════════════════════════════
+
+layout {
+    # 相对比例 (1.0 = 环境最大值)
+    ratio: 1.0
+    aspect: 4/3      # 宽高比
+}
+
+fn layout.apply {
+    # fate 探测环境
+    env_w = fate.probe_width()
+    env_h = fate.probe_height()
+    
+    # 按比例计算
+    framebuffer.width = env_w * layout.ratio
+    framebuffer.height = framebuffer.width / layout.aspect
+    
+    # 边界检查
+    when framebuffer.height > env_h {
+        framebuffer.height = env_h * layout.ratio
+        framebuffer.width = framebuffer.height * layout.aspect
+    }
+    
+    framebuffer.stride = framebuffer.width * 4
+}
+
+fn layout.ratio r {
+    layout.ratio = r
+    layout.apply()
+}
+
+fn layout.aspect a {
+    layout.aspect = a
+    layout.apply()
+}
+
+# 常用比例预设（代数形式）
+fn layout.quarter { layout.ratio(0.25) }
+fn layout.half { layout.ratio(0.5) }
+fn layout.full { layout.ratio(1.0) }
+
+# 常用宽高比
+fn layout.widescreen { layout.aspect(16/9) }
+fn layout.standard { layout.aspect(4/3) }
+fn layout.square { layout.aspect(1/1) }
+
+# ═══════════════════════════════════════════════════════════════
+# 代数坐标转换 (0.0-1.0 → 像素)
+# ═══════════════════════════════════════════════════════════════
+
+fn to_px_x r {
+    # 比例 → 像素
+    framebuffer.width * r
+}
+
+fn to_px_y r {
+    framebuffer.height * r
+}
+
+# 代数化绘图（使用 0.0-1.0 比例坐标）
+fn draw.a_rect rx ry rw rh color {
+    x = to_px_x(rx)
+    y = to_px_y(ry)
+    w = to_px_x(rw)
+    h = to_px_y(rh)
+    shape.add_rect(x, y, w, h, color)
+}
+
+fn draw.a_circle rx ry rr color {
+    x = to_px_x(rx)
+    y = to_px_y(ry)
+    r = to_px_x(rr)  # 使用宽度作为基准
+    shape.add_circle(x, y, r, color)
+}
+
+fn draw.a_text rx ry text color {
+    x = to_px_x(rx)
+    y = to_px_y(ry)
+    shape.add_text(x, y, text, color)
+}
+
+fn draw.a_line rx1 ry1 rx2 ry2 color {
+    x1 = to_px_x(rx1)
+    y1 = to_px_y(ry1)
+    x2 = to_px_x(rx2)
+    y2 = to_px_y(ry2)
+    shape.add_line(x1, y1, x2, y2, color)
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 形状定义
+# ═══════════════════════════════════════════════════════════════
+
+shape_type {
+    line: 1
+    rect: 2
+    circle: 3
+    text: 4
+}
+
+shape {
+    type: 0
+    x1: 0
+    y1: 0
+    x2: 0
+    y2: 0
+    color: 0xFFFFFF
+    filled: true
+}
+
+# 形状列表
+shapes: []
+
+# ═══════════════════════════════════════════════════════════════
+# 形状添加函数 (连接规律：建立形状关系)
+# ═══════════════════════════════════════════════════════════════
+
+fn shape.add_line x1 y1 x2 y2 color {
+    shapes <- { type: shape_type.line, x1: x1, y1: y1, x2: x2, y2: y2, color: color }
+}
+
+fn shape.add_rect x y w h color {
+    shapes <- { type: shape_type.rect, x1: x, y1: y, x2: w, y2: h, color: color, filled: true }
+}
+
+fn shape.add_circle cx cy r color {
+    shapes <- { type: shape_type.circle, x1: cx, y1: cy, x2: r, color: color, filled: true }
+}
+
+fn shape.add_text x y text color {
+    shapes <- { type: shape_type.text, x1: x, y1: y, text: text, color: color }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 像素操作 (张力规律：填充压力)
+# ═══════════════════════════════════════════════════════════════
+
+fn pixel.set x y color {
+    when x >= 0 {
+        when x < framebuffer.width {
+            when y >= 0 {
+                when y < framebuffer.height {
+                    addr = framebuffer.base + y * framebuffer.stride + x * 4
+                    @addr = color
+                }
+            }
+        }
+    }
+}
+
+fn pixel.get x y {
+    addr = framebuffer.base + y * framebuffer.stride + x * 4
+    -> @addr
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 光栅化 (熵规律：离散化连续形状)
+# ═══════════════════════════════════════════════════════════════
+
+fn rasterize.line x1 y1 x2 y2 color {
+    dx = x2 - x1
+    dy = y2 - y1
+    
+    when dx < 0 { dx = 0 - dx }
+    when dy < 0 { dy = 0 - dy }
+    
+    steps = dx
+    when dy > dx { steps = dy }
+    
+    when steps > 0 {
+        x_inc = (x2 - x1) / steps
+        y_inc = (y2 - y1) / steps
+        
+        x = x1
+        y = y1
+        i = 0
+        
+        loop {
+            when i > steps { break }
+            pixel.set(x, y, color)
+            x = x + x_inc
+            y = y + y_inc
+            i = i + 1
+        }
+    }
+}
+
+fn rasterize.rect x y w h color filled {
+    when filled {
+        row = 0
+        loop {
+            when row >= h { break }
+            col = 0
+            loop {
+                when col >= w { break }
+                pixel.set(x + col, y + row, color)
+                col = col + 1
+            }
+            row = row + 1
+        }
+    }
+}
+
+fn rasterize.circle cx cy r color filled {
+    when filled {
+        y = 0 - r
+        loop {
+            when y > r { break }
+            x = 0 - r
+            loop {
+                when x > r { break }
+                when x*x + y*y <= r*r {
+                    pixel.set(cx + x, cy + y, color)
+                }
+                x = x + 1
+            }
+            y = y + 1
+        }
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 渲染 (演化规律：形状演化为像素)
+# ═══════════════════════════════════════════════════════════════
+
+fn render {
+    shapes -> each shape {
+        when shape.type == shape_type.line {
+            rasterize.line(shape.x1, shape.y1, shape.x2, shape.y2, shape.color)
+        }
+        when shape.type == shape_type.rect {
+            rasterize.rect(shape.x1, shape.y1, shape.x2, shape.y2, shape.color, shape.filled)
+        }
+        when shape.type == shape_type.circle {
+            rasterize.circle(shape.x1, shape.y1, shape.x2, shape.color, shape.filled)
+        }
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 输出 (记忆规律：持久化)
+# ═══════════════════════════════════════════════════════════════
+
+fn save filename {
+    # 写 PPM 文件
+    out "P6\n"
+    out framebuffer.width
+    out " "
+    out framebuffer.height
+    out "\n255\n"
+    
+    y = 0
+    loop {
+        when y >= framebuffer.height { break }
+        x = 0
+        loop {
+            when x >= framebuffer.width { break }
+            color = pixel.get(x, y)
+            r = (color >> 16) & 0xFF
+            g = (color >> 8) & 0xFF
+            b = color & 0xFF
+            emit r
+            emit g
+            emit b
+            x = x + 1
+        }
+        y = y + 1
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# draw.* 语法支持
+# ═══════════════════════════════════════════════════════════════
+
+intent draw.line {
+    action: shape.add_line
+}
+
+intent draw.rect {
+    action: shape.add_rect
+}
+
+intent draw.circle {
+    action: shape.add_circle
+}
+
+intent draw.text {
+    action: shape.add_text
+}
+
+intent draw.render {
+    action: render
+}
+
+intent draw.save {
+    action: save
+}

@@ -1,0 +1,25 @@
+# Unified Field Demonstration
+# Shows how field parameters affect compilation
+
+unified {
+    i: 0.8    # High information density
+    e: 0.2    # Low entropy (stable)
+    r: 0.9    # Strong relations
+}
+
+out "Unified Field configured:\n"
+out "  i: 0.8 (compression bias)\n"
+out "  e: 0.2 (stable code)\n"
+out "  r: 0.9 (aggressive caching)\n"
+
+# Fate scheduler
+fate on
+out "\nFate: dynamic mode\n"
+
+# Some computation
+x = 100
+y = 200
+z = x + y
+
+out "\nComputation complete.\n"
+syscall.exit(0)

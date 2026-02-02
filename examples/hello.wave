@@ -1,0 +1,5 @@
+# Wave-C Hello World
+# A simple demonstration
+
+out "Hello, Wave!\n"
+syscall.exit(0)

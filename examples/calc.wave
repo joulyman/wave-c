@@ -1,0 +1,206 @@
+# 🧮 Wave 交互式计算器
+# 纯 Wave 实现，使用事件系统
+
+gui tile
+
+window "Wave Calc" 320 480
+
+# ==========================================
+# 样式定义
+# ==========================================
+
+style bg {
+    fill: 0x1C1C1E
+}
+
+style display {
+    fill: 0x2C2C2E
+    radius: 10
+    font_size: 48
+    align: right
+}
+
+style num {
+    fill: 0x3A3A3C
+    radius: 30
+    font_size: 24
+    align: center
+}
+
+style func {
+    fill: 0x636366
+    radius: 30
+    font_size: 24
+    align: center
+}
+
+style op {
+    fill: 0xFF9500
+    radius: 30
+    font_size: 24
+    align: center
+}
+
+style zero {
+    fill: 0x3A3A3C
+    radius: 30
+    font_size: 24
+    align: center
+}
+
+# ==========================================
+# 状态存储
+# ==========================================
+
+store "value" "0"
+store "first" "0"
+store "op" ""
+store "new" "1"
+
+# ==========================================
+# 界面绘制
+# ==========================================
+
+# 背景
+apply bg
+box 0 0 320 480
+
+# 显示屏
+apply display
+box 10 10 300 80
+text 280 50 "0"
+
+# 功能行: C +/- % ÷
+apply func
+box 10 100 70 60
+text 45 125 "C"
+
+box 85 100 70 60
+text 110 125 "+/-"
+
+box 160 100 70 60
+text 188 125 "%"
+
+apply op
+box 235 100 70 60
+text 263 125 "/"
+
+# 数字行 1: 7 8 9 ×
+apply num
+box 10 170 70 60
+text 38 195 "7"
+
+box 85 170 70 60
+text 113 195 "8"
+
+box 160 170 70 60
+text 188 195 "9"
+
+apply op
+box 235 170 70 60
+text 263 195 "x"
+
+# 数字行 2: 4 5 6 -
+apply num
+box 10 240 70 60
+text 38 265 "4"
+
+box 85 240 70 60
+text 113 265 "5"
+
+box 160 240 70 60
+text 188 265 "6"
+
+apply op
+box 235 240 70 60
+text 263 265 "-"
+
+# 数字行 3: 1 2 3 +
+apply num
+box 10 310 70 60
+text 38 335 "1"
+
+box 85 310 70 60
+text 113 335 "2"
+
+box 160 310 70 60
+text 188 335 "3"
+
+apply op
+box 235 310 70 60
+text 263 335 "+"
+
+# 底行: 0 . =
+apply zero
+box 10 380 145 60
+text 75 405 "0"
+
+apply num
+box 160 380 70 60
+text 188 405 "."
+
+apply op
+box 235 380 70 60
+text 263 405 "="
+
+# ==========================================
+# 事件绑定
+# ==========================================
+
+# 数字点击
+click 10 170 70 60 -> digit "7"
+click 85 170 70 60 -> digit "8"
+click 160 170 70 60 -> digit "9"
+click 10 240 70 60 -> digit "4"
+click 85 240 70 60 -> digit "5"
+click 160 240 70 60 -> digit "6"
+click 10 310 70 60 -> digit "1"
+click 85 310 70 60 -> digit "2"
+click 160 310 70 60 -> digit "3"
+click 10 380 145 60 -> digit "0"
+click 160 380 70 60 -> decimal
+
+# 操作符点击
+click 235 100 70 60 -> operate "/"
+click 235 170 70 60 -> operate "*"
+click 235 240 70 60 -> operate "-"
+click 235 310 70 60 -> operate "+"
+click 235 380 70 60 -> equals
+
+# 功能点击
+click 10 100 70 60 -> clear
+click 85 100 70 60 -> negate
+click 160 100 70 60 -> percent
+
+# 键盘支持
+key "0" -> digit "0"
+key "1" -> digit "1"
+key "2" -> digit "2"
+key "3" -> digit "3"
+key "4" -> digit "4"
+key "5" -> digit "5"
+key "6" -> digit "6"
+key "7" -> digit "7"
+key "8" -> digit "8"
+key "9" -> digit "9"
+key "+" -> operate "+"
+key "-" -> operate "-"
+key "*" -> operate "*"
+key "/" -> operate "/"
+key "=" -> equals
+key "Enter" -> equals
+key "c" -> clear
+key "Escape" -> clear
+key "." -> decimal
+
+# ==========================================
+# 渲染
+# ==========================================
+
+draw.render
+draw.save "calc.ppm"
+draw.display
+
+out "Calculator ready"
+
+syscall.exit(0)

@@ -1,0 +1,130 @@
+# 🌌 Wave 统一场 (Unified Field)
+# 规则映射层 — 无预设，由 Fate 提供
+
+use rules/fate
+
+# ═══════════════════════════════════════════════════════════════
+# 统一场参数 — 代数形式，Fate 填充
+# ═══════════════════════════════════════════════════════════════
+
+unified {
+    i: 0        # 信息密度 [0, 1]
+    e: 0        # 熵梯度 [0, 1]
+    r: 0        # 关系强度 [0, 1]
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 派生规则 — 从三参数派生
+# ═══════════════════════════════════════════════════════════════
+
+fn derive.gravitational {
+    -> {
+        strength: unified.i
+        inverse_square: unified.e * 2 + 1
+        threshold: unified.r * 0.1
+    }
+}
+
+fn derive.tension {
+    -> {
+        base: unified.r
+        accumulation: unified.e
+        release: unified.i * 0.8
+    }
+}
+
+fn derive.entropy {
+    -> {
+        initial: unified.e
+        growth: unified.i * 0.01
+        critical: 1 - unified.r * 0.1
+    }
+}
+
+fn derive.connection {
+    -> {
+        strength: unified.r
+        plasticity: unified.e
+        decay: 1 - unified.i
+    }
+}
+
+fn derive.memory {
+    -> {
+        persistence: unified.i
+        recall: unified.r
+        decay: unified.e * 0.001
+    }
+}
+
+fn derive.orbital {
+    -> {
+        eccentricity: unified.e
+        period: unified.r
+        stability: unified.i
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 规则映射 — 由 Fate 学习，非预设
+# ═══════════════════════════════════════════════════════════════
+
+fn map.cache {
+    fate.learn("rule:cache", { i: unified.i, e: unified.e, r: unified.r })
+}
+
+fn map.stream {
+    fate.learn("rule:stream", { i: unified.i, e: unified.e, r: unified.r })
+}
+
+fn map.graph {
+    fate.learn("rule:graph", { i: unified.i, e: unified.e, r: unified.r })
+}
+
+fn map.parallel {
+    fate.learn("rule:parallel", { i: unified.i, e: unified.e, r: unified.r })
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 初始化 — 从 Fate 获取参数
+# ═══════════════════════════════════════════════════════════════
+
+fn unified.init {
+    # 从 Fate 获取，无预设
+    unified.i = fate.field.i
+    unified.e = fate.field.e
+    unified.r = fate.field.r
+}
+
+fn unified.set i e r {
+    unified.i = i
+    unified.e = e
+    unified.r = r
+}
+
+fn unified.report {
+    out "[Unified] i:"
+    out unified.i
+    out " e:"
+    out unified.e
+    out " r:"
+    out unified.r
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 调整 — Fate 调用
+# ═══════════════════════════════════════════════════════════════
+
+fn unified.adjust delta_i delta_e delta_r {
+    unified.i = unified.i + delta_i
+    unified.e = unified.e + delta_e
+    unified.r = unified.r + delta_r
+    
+    # 归一化 [0, 1]
+    when unified.i > 1 { unified.i = 1 }
+    when unified.i < 0 { unified.i = 0 }
+    when unified.e > 1 { unified.e = 1 }
+    when unified.e < 0 { unified.e = 0 }
+    when unified.r > 1 { unified.r = 1 }
+    when unified.r < 0 { unified.r = 0 }
+}

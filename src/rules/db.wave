@@ -1,0 +1,416 @@
+# 🗄️ Fate 数据库 — 容器 + 自动优化
+# Fate 主导：如何建立容器、如何优化
+# 
+# 语法：
+#   db users                    # 创建容器（自动适配）
+#   db cache hint="cache"       # 带 hint 创建
+#   users.put("key", value)     # 存入
+#   users.get("key")            # 读取
+#   users.del("key")            # 删除
+#   users.query(predicate)      # 查询
+#   users.count                 # 记录数
+#   db.all                      # 所有容器
+
+use rules/fate
+use rules/tile
+
+# ═══════════════════════════════════════════════════════
+# 容器 — Fate 创建和管理
+# ═══════════════════════════════════════════════════════
+
+# 容器结构 — Fate 决定所有属性
+container -> structure {
+    id -> fate.next_id()
+    name -> ""
+    data -> []
+    importance -> 0             # Fate 评估
+    access_pattern -> 0         # Fate 学习
+    optimal_pool -> 0           # Fate 决定
+    last_access -> 0
+    access_count -> 0
+    auto_adapt -> true          # 默认自动适配
+}
+
+# 所有容器列表 — Fate 管理
+containers -> []
+db.all -> containers
+
+# ═══════════════════════════════════════════════════════
+# 容器创建 — Fate 主导
+# ═══════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════
+# 容器创建 — Fate 自动适配
+# ═══════════════════════════════════════════════════════
+
+fn db name {
+    -> db.create_named(name, "auto")
+}
+
+fn db.create {
+    -> db.create_named("", "auto")
+}
+
+fn db.create_named name hint {
+    c = container.new()
+    c.id = fate.next_id()
+    c.name = name
+    c.auto_adapt = true
+    
+    # Fate 决定
+    when hint == "auto" {
+        c.optimal_pool = fate.decide_pool()
+        c.importance = 0.5
+    }
+    when hint != "auto" {
+        fate.learn("hint:" + c.id, hint)
+        c.optimal_pool = fate.decide_pool_for(hint)
+        c.importance = fate.evaluate_hint(hint)
+    }
+    
+    c.addr = tile.alloc_from(c.optimal_pool, 1024)
+    
+    containers <- c
+    
+    # 绑定方法
+    c.put = fn(k, v) { db.put(c, k, v) }
+    c.get = fn(k) { -> db.get(c, k) }
+    c.del = fn(k) { db.delete(c, k) }
+    c.count = fn() { -> len(c.data) }
+    c.clear = fn() { c.data = [] }
+    
+    -> c
+}
+
+fn db.create_with hint {
+    -> db.create_named("", hint)
+}
+
+# ═══════════════════════════════════════════════════════
+# 数据操作 — 自动学习
+# ═══════════════════════════════════════════════════════
+
+fn db.put c key value {
+    # 存入数据
+    c.data <- { key: key, value: value }
+    
+    # Fate 学习访问模式
+    c.access_count = c.access_count + 1
+    c.last_access = fate.tick_count
+    fate.learn_access(c.id, "put")
+    
+    # 自动优化检查
+    db.auto_optimize(c)
+}
+
+fn db.get c key {
+    # 查找数据
+    i = 0
+    loop {
+        when i >= len(c.data) { -> 0 }
+        when c.data[i].key == key {
+            # 更新访问模式
+            c.access_count = c.access_count + 1
+            c.last_access = fate.tick_count
+            fate.learn_access(c.id, "get")
+            
+            -> c.data[i].value
+        }
+        i = i + 1
+    }
+    -> 0
+}
+
+fn db.delete c key {
+    new_data = []
+    i = 0
+    loop {
+        when i >= len(c.data) { break }
+        when c.data[i].key != key {
+            new_data <- c.data[i]
+        }
+        i = i + 1
+    }
+    c.data = new_data
+    
+    fate.learn_access(c.id, "delete")
+}
+
+# ═══════════════════════════════════════════════════════
+# 自动优化 — Fate 主导
+# ═══════════════════════════════════════════════════════
+
+fn db.auto_optimize c {
+    # Fate 评估是否需要优化
+    when fate.should_optimize(c) {
+        db.optimize(c)
+    }
+}
+
+fn db.optimize c {
+    # 1. 重新评估重要性
+    c.importance = fate.evaluate_container(c)
+    
+    # 2. 检查是否需要迁移池
+    new_pool = fate.decide_pool_for_pattern(c.access_pattern)
+    when new_pool != c.optimal_pool {
+        db.migrate(c, new_pool)
+    }
+    
+    # 3. 数据压缩（如果 Fate 认为需要）
+    when fate.should_compact(c) {
+        db.compact(c)
+    }
+}
+
+fn db.migrate c new_pool {
+    # 迁移容器到新池
+    old_addr = c.addr
+    c.addr = tile.alloc_from(new_pool, len(c.data) * 64)
+    tile.free(old_addr, 1024)
+    c.optimal_pool = new_pool
+    
+    fate.learn("migrate:" + c.id, new_pool)
+}
+
+fn db.compact c {
+    # Collapse 风格压缩
+    # 移除重复、合并相似
+    fate.learn("compact:" + c.id, len(c.data))
+}
+
+# ═══════════════════════════════════════════════════════
+# Fate 决策函数
+# ═══════════════════════════════════════════════════════
+
+fn fate.decide_pool {
+    # 基于当前统一场参数
+    when field.i > 0.7 { -> 0 }  # 高密度 → 压缩池
+    when field.r > 0.7 { -> 1 }  # 高关联 → 模式池
+    when field.e > 0.5 { -> 3 }  # 高熵 → 快速池
+    -> 2                          # 默认 → 通用池
+}
+
+fn fate.decide_pool_for hint {
+    # 根据 hint 决定
+    when hint == "cache" { -> 0 }
+    when hint == "index" { -> 1 }
+    when hint == "temp" { -> 3 }
+    -> fate.decide_pool()
+}
+
+fn fate.decide_pool_for_pattern pattern {
+    # 根据访问模式决定
+    # 频繁读 → 压缩池
+    # 频繁写 → 快速池
+    # 混合 → 通用池
+    when pattern > 100 { -> 0 }
+    when pattern < 10 { -> 3 }
+    -> 2
+}
+
+fn fate.evaluate_hint hint {
+    when hint == "cache" { -> 0.8 }
+    when hint == "index" { -> 0.9 }
+    when hint == "temp" { -> 0.2 }
+    -> 0.5
+}
+
+fn fate.evaluate_container c {
+    # 基于访问频率和数据量
+    score = 0.5
+    when c.access_count > 100 { score = score + 0.2 }
+    when len(c.data) > 50 { score = score + 0.1 }
+    when fate.tick_count - c.last_access < 100 { score = score + 0.1 }
+    -> score
+}
+
+fn fate.should_optimize c {
+    # 每 50 次访问优化一次
+    -> c.access_count % 50 == 0
+}
+
+fn fate.should_compact c {
+    -> len(c.data) > 100
+}
+
+fn fate.learn_access id op {
+    key = "access:" + id
+    count = fate.recall(key)
+    fate.learn(key, count + 1)
+}
+
+# ═══════════════════════════════════════════════════════
+# 查询 — Fate 优化的查找
+# ═══════════════════════════════════════════════════════
+
+fn db.query predicate {
+    # 跨所有容器查询
+    results = []
+    i = 0
+    loop {
+        when i >= len(containers) { break }
+        c = containers[i]
+        
+        j = 0
+        loop {
+            when j >= len(c.data) { break }
+            when predicate(c.data[j]) {
+                results <- c.data[j]
+            }
+            j = j + 1
+        }
+        
+        i = i + 1
+    }
+    -> results
+}
+
+fn db.find_by_key key {
+    # 查找所有容器中的 key
+    i = 0
+    loop {
+        when i >= len(containers) { -> 0 }
+        result = db.get(containers[i], key)
+        when result { -> result }
+        i = i + 1
+    }
+    -> 0
+}
+
+# ═══════════════════════════════════════════════════════
+# GC — Fate 决定释放
+# ═══════════════════════════════════════════════════════
+
+fn db.gc {
+    # Fate 评估并释放不重要的容器
+    new_containers = []
+    i = 0
+    loop {
+        when i >= len(containers) { break }
+        c = containers[i]
+        
+        # Fate 评估
+        importance = fate.evaluate_container(c)
+        
+        when importance > 0.3 {
+            new_containers <- c
+        }
+        when importance <= 0.3 {
+            # 释放
+            tile.free(c.addr, 1024)
+            fate.learn("gc:" + c.id, importance)
+        }
+        
+        i = i + 1
+    }
+    containers = new_containers
+}
+
+# ═══════════════════════════════════════════════════════
+# 注册到 Fate
+# ═══════════════════════════════════════════════════════
+
+fn db.init {
+    containers = []
+    fate.register_adapter(fate.next_id(), db.adapt)
+}
+
+fn db.adapt {
+    # Fate 触发的自动维护
+    
+    # GC（如果容器太多）
+    when len(containers) > 100 {
+        db.gc()
+    }
+    
+    # 全局优化（如果 Fate 认为需要）
+    when fate.should_global_optimize() {
+        db.global_optimize()
+    }
+}
+
+fn db.global_optimize {
+    i = 0
+    loop {
+        when i >= len(containers) { break }
+        db.optimize(containers[i])
+        i = i + 1
+    }
+}
+
+fn fate.should_global_optimize {
+    -> observe.usage > 0.8
+}
+
+fn db.report {
+    out "[DB] containers:"
+    out len(containers)
+    
+    total = 0
+    i = 0
+    loop {
+        when i >= len(containers) { break }
+        total = total + len(containers[i].data)
+        i = i + 1
+    }
+    out " records:"
+    out total
+}
+
+# ═══════════════════════════════════════════════════════
+# 性能基准
+# ═══════════════════════════════════════════════════════
+
+fn db.bench count {
+    out "[Bench] 开始性能测试..."
+    
+    # 创建测试容器
+    c = db("bench")
+    
+    # 写入测试
+    start = fate.tick_count
+    i = 0
+    loop {
+        when i >= count { break }
+        db.put(c, "key" + i, { value: i })
+        i = i + 1
+    }
+    write_time = fate.tick_count - start
+    
+    # 读取测试
+    start = fate.tick_count
+    i = 0
+    loop {
+        when i >= count { break }
+        db.get(c, "key" + i)
+        i = i + 1
+    }
+    read_time = fate.tick_count - start
+    
+    # 优化测试
+    start = fate.tick_count
+    db.optimize(c)
+    opt_time = fate.tick_count - start
+    
+    out "[Bench] 写入 "
+    out count
+    out " 条: "
+    out write_time
+    out " ticks"
+    
+    out "[Bench] 读取 "
+    out count
+    out " 条: "
+    out read_time
+    out " ticks"
+    
+    out "[Bench] 优化: "
+    out opt_time
+    out " ticks"
+    
+    out "[Bench] 自动适配次数: "
+    out c.access_count / 50
+    
+    -> { write: write_time, read: read_time, optimize: opt_time }
+}
